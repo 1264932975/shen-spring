@@ -10,7 +10,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String msg) {
         super(msg);
-        this.code = ResultCode.BUSINESS_ERROR.getCode();
+        this.code = ResultCode.PARAM_ERROR.getCode();
     }
 
     public BusinessException(ResultCode resultCode) {

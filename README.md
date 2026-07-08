@@ -196,7 +196,7 @@ public class OrderTimeoutJob {
 
 - 单体多节点、微服务多节点都适用
 - 锁基于数据库，天然可靠
-- 版本由 `spring-boot-starter-parent` 管理
+- 版本由父工程 `dependencyManagement` 统一管理
 
 ## 模块间调用
 

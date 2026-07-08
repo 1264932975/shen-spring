@@ -22,8 +22,37 @@
 
     <properties>
         <java.version>21</java.version>
+        <mybatis-plus.version>3.5.16</mybatis-plus.version>
+        <okhttp.version>5.4.0</okhttp.version>
     </properties>
 
+    <!-- 依赖版本管理：统一管理版本号，不实际引入依赖 -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- MyBatis-Plus -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            
+            <!-- OkHttp3 -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
+            </dependency>
+            
+            <!-- 子模块间的依赖管理 -->
+            <dependency>
+                <groupId>com.shen</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- 所有子模块都需要的公共依赖 -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

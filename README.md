@@ -20,7 +20,7 @@ shen-root (pom)                        聚合父工程
 | 模块 | 职责 | 核心内容 |
 |---|---|---|
 | common | 通用基础，不依赖任何框架 | ResultCode、BusinessException、hutool |
-| framework | 框架配置，通用基础设施 | WebMvcConfig、RestTemplate、MyBatisPlusConfig、ShedLockConfig、GlobalExceptionHandler、BaseEntity、ApiLogAspect、ApiLog |
+| framework | 框架配置，通用基础设施 | RestTemplate、MyBatisPlusConfig、ShedLockConfig、GlobalExceptionHandler、BaseEntity、ApiLogAspect、ApiLog |
 | security | 安全工具，纯工具不查表 | JWT过滤器、SecurityConfig、UserContext、RequirePermission注解、切面 |
 | module-auth | 认证模块，只写一次 | AuthController、UserDetailsServiceImpl、SysUser、LoginUser |
 | module-system1 | 业务模块（共享认证） | 依赖 module-auth，零认证代码 |
@@ -41,7 +41,7 @@ web + lombok（全局继承）
      │
      ├── framework
      │   └── common + mybatis-plus + RestTemplate
-     │       ├── 配置：WebMvcConfig、RestTemplateConfig、MybatisPlusConfig
+     │       ├── 配置：RestTemplateConfig、MybatisPlusConfig
      │       ├── 异常：GlobalExceptionHandler
      │       ├── 基类：BaseEntity
      │       └── 接口日志：ApiLogAspect + ApiLog实体 + ApiLogMapper（AOP切入，自动落库）

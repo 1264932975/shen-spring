@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shen.framework.mapper.ApiLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.shen.framework.entity.ApiLog">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="service" column="service" jdbcType="VARCHAR"/>
+            <result property="port" column="port" jdbcType="INTEGER"/>
+            <result property="uri" column="uri" jdbcType="VARCHAR"/>
+            <result property="method" column="method" jdbcType="VARCHAR"/>
+            <result property="operatorId" column="operator_id" jdbcType="BIGINT"/>
+            <result property="operatorRoleId" column="operator_role_id" jdbcType="BIGINT"/>
+            <result property="clientVersion" column="client_version" jdbcType="VARCHAR"/>
+            <result property="clientPlatform" column="client_platform" jdbcType="VARCHAR"/>
+            <result property="params" column="params" jdbcType="VARCHAR"/>
+            <result property="body" column="body" jdbcType="VARCHAR"/>
+            <result property="result" column="result" jdbcType="VARCHAR"/>
+            <result property="time" column="time" jdbcType="BIGINT"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,service,port,
+        uri,method,operator_id,
+        operator_role_id,client_version,client_platform,
+        params,body,result,
+        time,create_time,update_time
+    </sql>
+</mapper>

@@ -79,41 +79,33 @@ public class FileServiceImpl implements FileService {
 
         if (isImageFormat(extName)) {
             String lowerExt = extName.toLowerCase();
-            File sourceFile = null;
             File finalMainFile = null;
             File processedFile = null;
 
             try {
-                // 先将 MultipartFile 保存到临时文件，避免流被多次读取
-                sourceFile = File.createTempFile("source_", "." + lowerExt);
-                file.transferTo(sourceFile);
-
                 // 图片压缩处理
-                processedFile = compressImage(sourceFile, lowerExt, extName);
+                processedFile = compressImage(file, lowerExt, extName);
 
                 // 确定最终使用的主图文件
-                if (processedFile != null && processedFile.length() < sourceFile.length()) {
+                if (processedFile != null && processedFile.length() < file.getSize()) {
                     finalMainFile = processedFile;
                     processedFile = null; // 转移所有权，避免finally清理
                     log.info("图片压缩成功，格式：{}，原大小：{}KB，压缩后：{}KB，压缩率：{}%",
-                            extName, sourceFile.length() / 1024, finalMainFile.length() / 1024,
-                            (sourceFile.length() - finalMainFile.length()) * 100 / sourceFile.length());
-                } else {
-                    // 压缩效果不佳，直接使用源文件
-                    finalMainFile = sourceFile;
-                    sourceFile = null; // 转移所有权
-                    if (processedFile != null) {
-                        log.warn("图片压缩效果不佳，使用原文件");
-                    }
+                            extName, file.getSize() / 1024, finalMainFile.length() / 1024,
+                            (file.getSize() - finalMainFile.length()) * 100 / file.getSize());
                 }
 
                 // 上传主图
-                try (FileInputStream fis = new FileInputStream(finalMainFile)) {
-                    fileStorageService.upload(fis, mainFilePath);
+                if (finalMainFile != null) {
+                    try (FileInputStream fis = new FileInputStream(finalMainFile)) {
+                        fileStorageService.upload(fis, mainFilePath);
+                    }
+                } else {
+                    fileStorageService.upload(file.getInputStream(), mainFilePath);
                 }
 
-                // 基于最终主图生成缩略图
-                File thumbTempFile = generateThumbnailFromFile(finalMainFile, lowerExt);
+                // 生成缩略图
+                File thumbTempFile = generateThumbnail(file, lowerExt);
                 if (thumbTempFile != null) {
                     try (FileInputStream fis = new FileInputStream(thumbTempFile)) {
                         fileStorageService.upload(fis, datePath + thumbFileName);
@@ -125,21 +117,10 @@ public class FileServiceImpl implements FileService {
 
             } catch (Exception e) {
                 log.warn("图片处理失败，使用原文件，格式：{}，异常：{}", extName, e.getMessage(), e);
-                // 异常降级：使用源文件直接上传
-                if (sourceFile != null && sourceFile.exists()) {
-                    try (FileInputStream fis = new FileInputStream(sourceFile)) {
-                        fileStorageService.upload(fis, mainFilePath);
-                    }
-                } else if (finalMainFile != null && finalMainFile.exists()) {
-                    try (FileInputStream fis = new FileInputStream(finalMainFile)) {
-                        fileStorageService.upload(fis, mainFilePath);
-                    }
-                }
+                // 异常降级：直接上传原文件
+                fileStorageService.upload(file.getInputStream(), mainFilePath);
             } finally {
                 // 清理所有临时文件
-                if (sourceFile != null && sourceFile.exists()) {
-                    FileUtil.del(sourceFile);
-                }
                 if (finalMainFile != null && finalMainFile.exists()) {
                     FileUtil.del(finalMainFile);
                 }
@@ -206,27 +187,27 @@ public class FileServiceImpl implements FileService {
     /**
      * 图片压缩统一入口
      */
-    private File compressImage(File sourceFile, String lowerExt, String extName) throws IOException {
+    private File compressImage(MultipartFile file, String lowerExt, String extName) throws IOException {
         if ("png".equals(lowerExt)) {
-            return compressPng(sourceFile);
+            return compressPng(file);
         } else if ("jpg".equals(lowerExt) || "jpeg".equals(lowerExt)) {
-            return compressJpeg(sourceFile);
+            return compressJpeg(file);
         } else if ("webp".equals(lowerExt)) {
-            return compressWebp(sourceFile);
+            return compressWebp(file);
         } else if ("bmp".equals(lowerExt) || "gif".equals(lowerExt)) {
-            return scaleImageOnly(sourceFile, lowerExt);
+            return scaleImageOnly(file, lowerExt);
         }
         return null;
     }
 
     /**
-     * 基于文件生成缩略图
+     * 生成缩略图
      */
-    private File generateThumbnailFromFile(File sourceFile, String format) throws IOException {
+    private File generateThumbnail(MultipartFile file, String format) throws IOException {
         File tempOutput = null;
         try {
             tempOutput = File.createTempFile("thumb_", "." + format);
-            Thumbnails.of(sourceFile)
+            Thumbnails.of(file.getInputStream())
                     .size(thumbSize, thumbSize)
                     .outputFormat(format)
                     .toFile(tempOutput);
@@ -245,24 +226,27 @@ public class FileServiceImpl implements FileService {
     /**
      * 使用 pngquant 压缩 PNG 文件
      */
-    private File compressPng(File sourceFile) throws IOException {
+    private File compressPng(MultipartFile file) throws IOException {
+        File tempInput = null;
         File tempScaled = null;
         File tempOutput = null;
 
         try {
-            Dimension dim = getImageDimension(sourceFile);
+            Dimension dim = getImageDimension(file.getInputStream());
             boolean needScale = dim != null && (dim.width > maxImageDimension || dim.height > maxImageDimension);
 
             File sourceFileForCompression;
             if (needScale) {
                 tempScaled = File.createTempFile("scaled_", ".png");
-                Thumbnails.of(sourceFile)
+                Thumbnails.of(file.getInputStream())
                         .size(maxImageDimension, maxImageDimension)
                         .outputFormat("png")
                         .toFile(tempScaled);
                 sourceFileForCompression = tempScaled;
             } else {
-                sourceFileForCompression = sourceFile;
+                tempInput = File.createTempFile("upload_", ".png");
+                FileUtil.writeFromStream(file.getInputStream(), tempInput);
+                sourceFileForCompression = tempInput;
             }
 
             tempOutput = File.createTempFile("compressed_", ".png");
@@ -275,6 +259,7 @@ public class FileServiceImpl implements FileService {
         } catch (Exception e) {
             throw new IOException("PNG压缩失败: " + e.getMessage(), e);
         } finally {
+            if (tempInput != null && tempInput.exists()) FileUtil.del(tempInput);
             if (tempScaled != null && tempScaled.exists()) FileUtil.del(tempScaled);
             if (tempOutput != null && tempOutput.exists()) FileUtil.del(tempOutput);
         }
@@ -310,8 +295,8 @@ public class FileServiceImpl implements FileService {
     /**
      * 压缩 JPEG 文件
      */
-    private File compressJpeg(File sourceFile) throws IOException {
-        Dimension dim = getImageDimension(sourceFile);
+    private File compressJpeg(MultipartFile file) throws IOException {
+        Dimension dim = getImageDimension(file.getInputStream());
         boolean needScale = dim != null && (dim.width > maxImageDimension || dim.height > maxImageDimension);
 
         if (!needScale) {
@@ -320,12 +305,12 @@ public class FileServiceImpl implements FileService {
 
         File tempOutput = null;
         try {
-            long fileSize = sourceFile.length();
+            long fileSize = file.getSize();
             float quality = fileSize > 2 * 1024 * 1024 ? 0.75f
                     : fileSize > 500 * 1024 ? 0.85f : 0.92f;
 
             tempOutput = File.createTempFile("compressed_", ".jpg");
-            Thumbnails.of(sourceFile)
+            Thumbnails.of(file.getInputStream())
                     .size(maxImageDimension, maxImageDimension)
                     .outputFormat("jpg")
                     .outputQuality(quality)
@@ -345,8 +330,8 @@ public class FileServiceImpl implements FileService {
     /**
      * 压缩 WebP 文件
      */
-    private File compressWebp(File sourceFile) throws IOException {
-        Dimension dim = getImageDimension(sourceFile);
+    private File compressWebp(MultipartFile file) throws IOException {
+        Dimension dim = getImageDimension(file.getInputStream());
         boolean needScale = dim != null && (dim.width > maxImageDimension || dim.height > maxImageDimension);
 
         if (!needScale) {
@@ -356,7 +341,7 @@ public class FileServiceImpl implements FileService {
         File tempOutput = null;
         try {
             tempOutput = File.createTempFile("compressed_", ".webp");
-            Thumbnails.of(sourceFile)
+            Thumbnails.of(file.getInputStream())
                     .size(maxImageDimension, maxImageDimension)
                     .outputFormat("webp")
                     .outputQuality(0.85f)
@@ -376,8 +361,8 @@ public class FileServiceImpl implements FileService {
     /**
      * 仅缩放图片（BMP、GIF 等格式）
      */
-    private File scaleImageOnly(File sourceFile, String format) throws IOException {
-        Dimension dim = getImageDimension(sourceFile);
+    private File scaleImageOnly(MultipartFile file, String format) throws IOException {
+        Dimension dim = getImageDimension(file.getInputStream());
         boolean needScale = dim != null && (dim.width > maxImageDimension || dim.height > maxImageDimension);
 
         if (!needScale) {
@@ -387,7 +372,7 @@ public class FileServiceImpl implements FileService {
         File tempOutput = null;
         try {
             tempOutput = File.createTempFile("scaled_", "." + format);
-            Thumbnails.of(sourceFile)
+            Thumbnails.of(file.getInputStream())
                     .size(maxImageDimension, maxImageDimension)
                     .outputFormat(format)
                     .toFile(tempOutput);
@@ -404,19 +389,7 @@ public class FileServiceImpl implements FileService {
     }
 
     /**
-     * 获取图片尺寸（基于文件）
-     */
-    private Dimension getImageDimension(File file) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            return getImageDimension(fis);
-        } catch (IOException e) {
-            log.debug("读取图片尺寸失败: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * 获取图片尺寸（基于输入流）
+     * 获取图片尺寸
      */
     private Dimension getImageDimension(InputStream in) {
         try (ImageInputStream iis = ImageIO.createImageInputStream(in)) {

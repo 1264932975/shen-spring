@@ -245,35 +245,75 @@ file_resource 表（索引）
 
 ### 存储方案
 
-**当前：本地文件系统**
+**目录结构**
+
+```
+com.shen.file
+├── service/                          # 业务服务层
+│   ├── FileService.java             # 文件上传业务服务
+│   └── FileResourceService.java     # 文件资源业务服务
+├── storage/                          # 存储基础设施层
+│   ├── FileStorageService.java      # 文件存储接口
+│   └── impl/
+│       ├── LocalFileStorageService.java      # 本地存储（已实现）
+│       └── AliyunOssFileStorageService.java  # 阿里云 OSS（框架示例，未实现）
+├── mapper/                           # 数据访问层
+├── entity/                           # 实体类
+└── dto/                              # 数据传输对象
+```
+
+**存储接口**
+
+```java
+public interface FileStorageService {
+    void upload(InputStream inputStream, String path);
+    void delete(String path);
+    String getUrl(String path);
+}
+```
+
+**实现状态**
+
+| 存储类型 | 实现类 | 状态 | 说明 |
+|---|---|---|---|
+| 本地存储 | LocalFileStorageService | ✅ 已实现 | 默认使用，生产可用 |
+| 阿里云 OSS | AliyunOssFileStorageService | ⚠️ 框架示例 | 仅展示扩展方式，未实现具体逻辑 |
+
+**切换存储实现**
+
+通过 `@ConditionalOnProperty` 注解实现配置化切换：
 
 ```yaml
 files:
-  upload:
-    path: /data/uploads          # 本地存储路径
-    url: https://cdn.example.com # CDN/访问前缀
-    max-image-dimension: 2000    # 图片最大边长（px）
+  storage:
+    type: local  # 改为 aliyun-oss 即可切换（需先实现阿里云 OSS 逻辑）
 ```
 
-**配置说明**：
+| 配置值 | 实现类 | 说明 |
+|---|---|---|
+| `local` | LocalFileStorageService | 本地文件系统（默认，已实现） |
+| `aliyun-oss` | AliyunOssFileStorageService | 阿里云 OSS（框架示例，需自行实现） |
+
+**扩展新存储**
+
+在 `storage.impl` 包下添加新实现类：
+
+```java
+@Component
+@ConditionalOnProperty(name = "files.storage.type", havingValue = "minio")
+public class MinioFileStorageService implements FileStorageService {
+    // 实现接口方法
+}
+```
+
+**配置说明**
 
 | 配置项 | 说明 | 示例 |
 |---|---|---|
-| `path` | 服务器本地存储路径 | `/data/uploads` 或 `C:\uploads` |
-| `url` | 文件访问前缀（CDN/Nginx 代理） | `https://cdn.example.com` |
-| `max-image-dimension` | 图片最大边长，超限则压缩 | `2000` |
-| `cleanup-buffer-days` | 孤儿文件清理缓冲天数，默认 3 | `3` |
-
-**扩展：OSS/MinIO**
-
-预留 `FileStorage` 接口，本地存储作为默认实现，后续可切换：
-
-```
-FileStorage (接口)
-├── LocalFileStorage      # 本地磁盘（当前实现）
-├── MinioFileStorage     # MinIO 对象存储
-└── OssFileStorage       # 阿里云 OSS
-```
+| `files.upload.path` | 本地存储路径 | `/data/uploads` |
+| `files.upload.url` | 文件访问前缀 | `https://cdn.example.com` |
+| `files.upload.max-image-dimension` | 图片最大边长 | `2000` |
+| `files.storage.type` | 存储类型 | `local` / `aliyun-oss` |
 
 ### 安全考虑
 

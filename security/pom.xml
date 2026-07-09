@@ -14,11 +14,6 @@
     <description>安全工具模块，纯工具不查表</description>
 
     <dependencies>
-        <dependency>
-            <groupId>com.shen</groupId>
-            <artifactId>common</artifactId>
-        </dependency>
-
         <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

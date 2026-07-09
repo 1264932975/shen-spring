@@ -11,6 +11,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -52,10 +53,42 @@ public class ApiLogAspect {
 
     /**
      * 环绕通知：在 Controller 方法执行前后采集数据
+     * 注意：日志采集失败不影响业务接口正常运行
      */
     @Around("apiPointcut()")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
-        // 获取当前请求对象
+        long startTime = System.currentTimeMillis();
+        Object result = null;
+        Throwable exception = null;
+
+        try {
+            // 执行目标 Controller 方法
+            result = joinPoint.proceed();
+        } catch (Throwable e) {
+            exception = e;
+        }
+
+        // 提取日志数据（同步提取，避免异步线程拿不到 RequestContextHolder）
+        try {
+            ApiLog apiLog = extractLogData(joinPoint, startTime, result);
+            // 异步落库
+            saveLogAsync(apiLog);
+        } catch (Exception e) {
+            log.error("接口日志记录失败", e);
+        }
+
+        // 如果 Controller 方法抛异常，继续向上抛出
+        if (exception != null) {
+            throw exception;
+        }
+
+        return result;
+    }
+
+    /**
+     * 提取日志数据（同步执行，从当前请求上下文获取）
+     */
+    private ApiLog extractLogData(ProceedingJoinPoint joinPoint, long startTime, Object result) {
         HttpServletRequest request =
                 ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 
@@ -63,29 +96,28 @@ public class ApiLogAspect {
         apiLog.setUri(request.getRequestURI());
         apiLog.setMethod(request.getMethod());
 
-        // 记录 Query 参数（URL 问号后面的参数）
+        // 记录 Query 参数
         Map<String, String[]> parameterMap = request.getParameterMap();
-        apiLog.setParams(
-                CollectionUtils.isEmpty(parameterMap) ? null :
-                        JSON.toJSONString(parameterMap)
-        );
+        if (!CollectionUtils.isEmpty(parameterMap)) {
+            apiLog.setParams(JSON.toJSONString(parameterMap));
+        }
 
-        // 记录 Request Body（POST/PUT 等请求体数据，只提取 @RequestBody 标注的参数）
-        apiLog.setBody(
-                truncateString(
-                        extractRequestBody(joinPoint, request.getContentType())
-                )
-        );
+        // 记录 Request Body
+        apiLog.setBody(truncateString(extractRequestBody(joinPoint, request.getContentType())));
 
         apiLog.setCreateTime(LocalDateTime.now());
 
-        // 从 Filter 中 setAttribute 的操作人信息（未登录时为 null）
+        // 操作人信息（可能为 null 或非 Long 类型，安全转换）
         Object userIdObj = request.getAttribute("userId");
         if (userIdObj != null) {
-            apiLog.setOperatorId(Long.valueOf(userIdObj.toString()));
+            try {
+                apiLog.setOperatorId(Long.valueOf(userIdObj.toString()));
+            } catch (NumberFormatException e) {
+                log.warn("userId 转换失败: {}", userIdObj);
+            }
         }
 
-        // 从 Filter 中 setAttribute 的客户端信息
+        // 客户端信息
         Object clientVersionObj = request.getAttribute("clientVersion");
         if (clientVersionObj != null) {
             apiLog.setClientVersion(clientVersionObj.toString());
@@ -95,28 +127,26 @@ public class ApiLogAspect {
             apiLog.setClientPlatform(clientPlatformObj.toString());
         }
 
-        // 记录开始时间，用于计算耗时
-        long startTime = System.currentTimeMillis();
-        Object result = null;
+        // 计算耗时
+        long costTime = System.currentTimeMillis() - startTime;
+        apiLog.setTime(costTime);
+
+        // 记录响应结果
+        apiLog.setResult(truncateString(JSON.toJSONString(result)));
+
+        return apiLog;
+    }
+
+    /**
+     * 异步落库（不阻塞接口响应）
+     */
+    @Async
+    public void saveLogAsync(ApiLog apiLog) {
         try {
-            // 执行目标 Controller 方法
-            result = joinPoint.proceed();
-        } finally {
-            // 计算耗时（毫秒）
-            long costTime = System.currentTimeMillis() - startTime;
-            apiLog.setTime(costTime);
-
-            // 记录响应结果（无论成功还是异常都会执行）
-            apiLog.setResult(
-                    truncateString(
-                            JSON.toJSONString(result)
-                    )
-            );
-
-            // 落库
             apiLogService.save(apiLog);
+        } catch (Exception e) {
+            log.error("接口日志落库失败，URI: {}", apiLog.getUri(), e);
         }
-        return result;
     }
 
     /**

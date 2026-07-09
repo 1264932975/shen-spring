@@ -76,62 +76,52 @@ public class FileServiceImpl implements FileService {
         String thumbFilePath = null;
 
         if (isImageFormat(extName)) {
-            // 图片：压缩处理
-            File processedFile = null;
+            String lowerExt = extName.toLowerCase();
+            File finalMainFile = null;
+
             try {
-                String lowerExt = extName.toLowerCase();
+                // 图片压缩处理
+                File processedFile = compressImage(file, lowerExt, extName);
 
-                if ("png".equals(lowerExt)) {
-                    processedFile = compressPng(file);
-                } else if ("jpg".equals(lowerExt) || "jpeg".equals(lowerExt)) {
-                    processedFile = compressJpeg(file);
-                } else if ("webp".equals(lowerExt)) {
-                    processedFile = compressWebp(file);
-                } else if ("bmp".equals(lowerExt) || "gif".equals(lowerExt)) {
-                    processedFile = scaleImageOnly(file, lowerExt);
-                }
-
-                // 压缩后体积确实减小才用压缩后的文件
+                // 确定最终使用的主图文件
                 if (processedFile != null && processedFile.length() < file.getSize()) {
-                    try (FileInputStream fis = new FileInputStream(processedFile)) {
-                        fileStorageService.upload(fis, mainFilePath);
-                    }
+                    finalMainFile = processedFile;
                     log.info("图片压缩成功，格式：{}，原大小：{}KB，压缩后：{}KB，压缩率：{}%",
                             extName, file.getSize() / 1024, processedFile.length() / 1024,
                             (file.getSize() - processedFile.length()) * 100 / file.getSize());
                 } else {
-                    fileStorageService.upload(file.getInputStream(), mainFilePath);
+                    // 压缩效果不佳，保存原文件到临时文件
+                    finalMainFile = File.createTempFile("main_", "." + lowerExt);
+                    FileUtil.writeFromStream(file.getInputStream(), finalMainFile);
                     if (processedFile != null) {
-                        log.warn("图片压缩效果不佳，使用原文件，格式：{}，原大小：{}KB，压缩后：{}KB",
-                                extName, file.getSize() / 1024, processedFile.length() / 1024);
+                        log.warn("图片压缩效果不佳，使用原文件");
                     }
                 }
-            } catch (Exception e) {
-                log.warn("图片压缩失败，使用原文件，格式：{}，异常：{}", extName, e.getMessage(), e);
-                fileStorageService.upload(file.getInputStream(), mainFilePath);
-            } finally {
-                if (processedFile != null && processedFile.exists()) {
-                    FileUtil.del(processedFile);
-                }
-            }
 
-            // 生成缩略图
-            String lowerExt = extName.toLowerCase();
-            File thumbTempFile = null;
-            try {
-                thumbTempFile = generateThumbnail(file, lowerExt);
+                // 上传主图
+                try (FileInputStream fis = new FileInputStream(finalMainFile)) {
+                    fileStorageService.upload(fis, mainFilePath);
+                }
+
+                // 基于最终主图生成缩略图
+                File thumbTempFile = generateThumbnailFromFile(finalMainFile, lowerExt);
                 if (thumbTempFile != null) {
                     try (FileInputStream fis = new FileInputStream(thumbTempFile)) {
                         fileStorageService.upload(fis, datePath + thumbFileName);
                     }
                     thumbFilePath = datePath + thumbFileName;
                     log.info("缩略图生成成功，格式：{}，尺寸：{}x{}", lowerExt, thumbSize, thumbSize);
-                }
-            } catch (Exception e) {
-                log.warn("缩略图生成失败：{}", e.getMessage(), e);
-            } finally {
-                if (thumbTempFile != null && thumbTempFile.exists()) {
                     FileUtil.del(thumbTempFile);
+                }
+
+            } catch (Exception e) {
+                log.warn("图片处理失败，使用原文件，格式：{}，异常：{}", extName, e.getMessage(), e);
+                // 异常降级：直接上传原文件
+                fileStorageService.upload(file.getInputStream(), mainFilePath);
+            } finally {
+                // 清理临时文件
+                if (finalMainFile != null && finalMainFile.exists()) {
+                    FileUtil.del(finalMainFile);
                 }
             }
         } else {
@@ -188,6 +178,45 @@ public class FileServiceImpl implements FileService {
             return null;
         }
         return fileStorageService.getUrl(fileResource.getThumbPath());
+    }
+
+    /**
+     * 图片压缩统一入口
+     */
+    private File compressImage(MultipartFile file, String lowerExt, String extName) throws IOException {
+        if ("png".equals(lowerExt)) {
+            return compressPng(file);
+        } else if ("jpg".equals(lowerExt) || "jpeg".equals(lowerExt)) {
+            return compressJpeg(file);
+        } else if ("webp".equals(lowerExt)) {
+            return compressWebp(file);
+        } else if ("bmp".equals(lowerExt) || "gif".equals(lowerExt)) {
+            return scaleImageOnly(file, lowerExt);
+        }
+        return null;
+    }
+
+    /**
+     * 基于文件生成缩略图
+     */
+    private File generateThumbnailFromFile(File sourceFile, String format) throws IOException {
+        File tempOutput = null;
+        try {
+            tempOutput = File.createTempFile("thumb_", "." + format);
+            Thumbnails.of(sourceFile)
+                    .size(thumbSize, thumbSize)
+                    .outputFormat(format)
+                    .toFile(tempOutput);
+
+            File result = tempOutput;
+            tempOutput = null;
+            return result;
+
+        } catch (Exception e) {
+            throw new IOException("缩略图生成失败: " + e.getMessage(), e);
+        } finally {
+            if (tempOutput != null && tempOutput.exists()) FileUtil.del(tempOutput);
+        }
     }
 
     /**

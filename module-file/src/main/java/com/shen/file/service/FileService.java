@@ -38,4 +38,12 @@ public interface FileService {
      * 根据 ID 获取缩略图 URL
      */
     String getThumbUrlById(Long id);
+
+    /**
+     * 压缩 PNG 字节数组
+     *
+     * @param pngBytes 原始 PNG 字节数组
+     * @return 压缩后的字节数组（如果压缩后体积更大则返回原数组）
+     */
+    byte[] compressPngBytes(byte[] pngBytes);
 }

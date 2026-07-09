@@ -93,7 +93,8 @@ framework 模块内：
 
 ```
 framework/src/main/resources/db/migration/
-└── V20260708.100__api_log.sql          # 日期.100
+├── V20260708.100__api_log.sql          # 日期.100
+└── V20260708.101__shedlock.sql         # 日期.101
 
 module-auth/src/main/resources/db/migration/
 └── V20260708.200__sys_user.sql         # 日期.200
@@ -148,9 +149,9 @@ spring:
 
 采用 ShedLock，基于数据库行锁。不用 Redis 做分布式锁的原因：Redis 主从切换可能丢锁，可靠性不如数据库。
 
-### 依赖与配置
+#### 依赖与配置
 
-放 `framework`：
+放 `framework`，版本由父工程 `dependencyManagement` 统一管理：
 ```xml
 <dependency>
     <groupId>net.javacrumbs.shedlock</groupId>
@@ -174,7 +175,7 @@ public class ShedLockConfig {
 }
 ```
 
-### 锁表
+#### 锁表
 
 framework 放 Flyway 脚本建表：
 ```sql
@@ -188,7 +189,7 @@ CREATE TABLE shedlock (
 );
 ```
 
-### 业务模块使用
+#### 业务模块使用
 
 ```java
 @Component
@@ -204,7 +205,13 @@ public class OrderTimeoutJob {
 
 - 单体多节点、微服务多节点都适用
 - 锁基于数据库，天然可靠
-- 版本由父工程 `dependencyManagement` 统一管理
+
+## 两种认证方式
+
+| 方式 | 模块 | 直接依赖 | 认证代码 |
+|---|---|---|---|
+| 共享认证 | module-system1 | module-auth | 零行 |
+| 独立认证 | module-system2 | framework + security | 自己写 UserDetailsService |
 
 ## 模块间调用
 
@@ -371,17 +378,10 @@ module-auth/
 
 拆微服务后通过注册中心（Nacos）管理配置，对代码无影响。
 
-## 两种认证方式
-
-| 方式 | 模块 | 直接依赖 | 认证代码 |
-|---|---|---|---|
-| 共享认证 | module-system1 | module-auth | 零行 |
-| 独立认证 | module-system2 | framework + security | 自己写 UserDetailsService |
-
 ## 设计要点
 
 - **common 不依赖框架**：纯工具，未来换技术栈也能复用
 - **security 不查表**：JWT 校验、权限注解、UserContext 全是工具，不碰数据库
-- **framework 管基础设施**：接口日志、全局异常、MyBatisPlus 配置——所有业务无关的通用能力都在这
+- **framework 管基础设施**：接口日志、全局异常、MyBatisPlus 配置、健康监控——所有业务无关的通用能力都在这
 - **module-auth 只写一次**：共享模式直接依赖，独立模式参考实现
 - **server 只聚合**：不写业务代码，拆微服务时给各模块加 Application.java 即可

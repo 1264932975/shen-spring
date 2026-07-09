@@ -8,6 +8,7 @@ import com.shen.file.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +27,9 @@ public class FileCleanupScheduledTask {
     private final FileResourceService fileResourceService;
     private final FileStorageService fileStorageService;
 
+    @Value("${files.upload.cleanup-buffer-days:3}")
+    private int cleanupBufferDays;
+
     /**
      * 清理未被引用的文件
      * 每天凌晨1点执行
@@ -35,13 +39,13 @@ public class FileCleanupScheduledTask {
     public void cleanupUnreferencedFiles() {
         log.info("开始清理未被引用的文件...");
 
-        Date threeDaysAgo = DateUtil.offsetDay(new Date(), -3);
+        Date bufferDate = DateUtil.offsetDay(new Date(), -cleanupBufferDays);
 
         int pageSize = 1000;
         int totalDeleted = 0;
         int totalFailed = 0;
 
-        Page<FileResource> page = fileResourceService.pageRefZero(1, pageSize, threeDaysAgo);
+        Page<FileResource> page = fileResourceService.pageRefZero(1, pageSize, bufferDate);
 
         while (!CollectionUtils.isEmpty(page.getRecords())) {
             for (FileResource fileResource : page.getRecords()) {
@@ -73,7 +77,7 @@ public class FileCleanupScheduledTask {
             }
 
             // 查询下一页
-            page = fileResourceService.pageRefZero(1, pageSize, threeDaysAgo);
+            page = fileResourceService.pageRefZero(1, pageSize, bufferDate);
         }
 
         log.info("未引用文件清理完成，共清理: {} 个，失败: {} 个", totalDeleted, totalFailed);

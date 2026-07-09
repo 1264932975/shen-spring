@@ -12,7 +12,6 @@ shen-root (pom)                        聚合父工程
 ├── module-auth                        认证模块
 ├── module-file                        文件管理模块
 ├── module-system1                     业务模块（共享认证）
-├── module-system2                     业务模块（独立认证）
 └── server                             单体启动器
 ```
 
@@ -22,10 +21,10 @@ shen-root (pom)                        聚合父工程
 |---|---|---|
 | common | 通用基础，不依赖任何框架 | ResultCode、BusinessException、hutool、fastjson2 |
 | framework | 框架配置，通用基础设施 | RestTemplate、MyBatisPlusConfig、ShedLockConfig、GlobalExceptionHandler、BaseEntity、ApiLogAspect、ApiLogService、Actuator |
-| security | 安全工具，纯工具不查表 | JWT过滤器、SecurityConfig、UserContext、RequirePermission注解、切面 |
-| module-auth | 认证模块，只写一次 | AuthController、UserDetailsServiceImpl、SysUser、LoginUser |
+| security | 安全工具，纯工具不查表 | JwtTokenUtil、JwtAuthenticationTokenFilter、UserContext、PasswordEncoder、AuthenticationManager |
+| module-auth | 认证模块（示例），展示如何使用 security | AuthController、UserDetailsService、PermissionLoadingFilter、SecurityConfig |
 | module-system1 | 业务模块（共享认证） | 依赖 module-auth，零认证代码 |
-| module-system2 | 业务模块（独立认证） | 依赖 framework + security，自己实现 UserDetailsService |
+| module-system2 | 业务模块（独立认证示例） | 参考 module-auth 写法，自己实现 UserDetailsService + SecurityConfig |
 | server | 启动入口 | 聚合 module-system1 + module-system2 |
 
 ## 依赖关系
@@ -38,7 +37,10 @@ web + lombok（全局继承）
      │   └── hutool + fastjson2
      │
      ├── security
-     │   └── common + spring-security + jjwt
+     │   └── common + spring-security + hutool-jwt
+     │       ├── 工具：JwtTokenUtil、ClientInfoUtil、UserContext
+     │       ├── 过滤器：JwtAuthenticationTokenFilter（解析 token，设置 userId）
+     │       └── 配置：SecurityConfig（提供 PasswordEncoder、AuthenticationManager）
      │
      ├── framework
      │   └── common + mybatis-plus + RestTemplate + actuator
@@ -50,12 +52,16 @@ web + lombok（全局继承）
      │
      ├── module-auth
      │   └── framework + security
+     │       ├── AuthController（登录接口）
+     │       ├── UserDetailsService（查用户+权限）
+     │       ├── PermissionLoadingFilter（加载权限到 SecurityContext）
+     │       └── SecurityConfig（注册过滤器 + 权限规则）
      │
      ├── module-system1
      │   └── module-auth（framework、security 传递依赖）
      │
      ├── module-system2
-     │   └── framework + security（自己实现 UserDetailsService）
+     │   └── framework + security（参考 module-auth 写法，自己实现 UserDetailsService + SecurityConfig）
      │
      └── server
          └── module-system1 + module-system2
@@ -370,12 +376,50 @@ public class FileCleanupScheduledTask {
 - 分页处理：每次 1000 条，避免一次性加载过多数据
 - 文件不存在时只删数据库记录，不报错
 
+## 认证模块（module-auth）
+
+module-auth 是认证模块的示例，展示如何使用 security 模块实现完整的认证流程。其他业务模块（如 module-system2）需要独立认证时，参考 module-auth 的写法即可。
+
+### 核心组件
+
+| 组件 | 说明 |
+|---|---|
+| AuthController | 登录接口，调用 AuthenticationManager 认证，生成 JWT token |
+| UserDetailsService | 从数据库查询用户信息和角色权限 |
+| PermissionLoadingFilter | 在 JwtAuthenticationTokenFilter 之后执行，根据 userId 查权限，设置到 SecurityContext |
+| SecurityConfig | 注册 JwtAuthenticationTokenFilter + PermissionLoadingFilter，配置权限规则 |
+
+### 过滤器执行顺序
+
+```
+请求 → JwtAuthenticationTokenFilter（security 模块，解析 token，设置 userId）
+     → PermissionLoadingFilter（module-auth，获取 userId，查权限，设置 SecurityContext）
+     → Spring Security 权限校验（hasRole 等）
+     → 业务 Controller
+```
+
+在 SecurityConfig 中注册：
+
+```java
+http
+    .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+    .addFilterBefore(permissionLoadingFilter, JwtAuthenticationTokenFilter.class);
+```
+
+### module-system2 独立认证写法
+
+module-system2 不依赖 module-auth，参考 module-auth 的写法，自己实现：
+
+1. 实现 UserDetailsService（查用户+权限）
+2. 创建 PermissionLoadingFilter（加载权限到 SecurityContext）
+3. 创建 SecurityConfig（注册过滤器 + 配置权限规则）
+
 ## 两种认证方式
 
 | 方式 | 模块 | 直接依赖 | 认证代码 |
 |---|---|---|---|
 | 共享认证 | module-system1 | module-auth | 零行 |
-| 独立认证 | module-system2 | framework + security | 自己写 UserDetailsService |
+| 独立认证 | module-system2 | framework + security | 参考 module-auth 写法 |
 
 ## 模块间调用
 

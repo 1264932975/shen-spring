@@ -26,6 +26,8 @@
         <okhttp.version>5.4.0</okhttp.version>
         <shedlock.version>7.7.0</shedlock.version>
         <flyway.version>12.10.0</flyway.version>
+        <hutool.version>5.8.46</hutool.version>
+        <fastjson2.version>2.0.61</fastjson2.version>
     </properties>
 
     <!-- 依赖版本管理：统一管理版本号，不实际引入依赖 -->
@@ -72,6 +74,20 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-mysql</artifactId>
                 <version>${flyway.version}</version>
+            </dependency>
+            
+            <!-- Hutool 通用工具类库 -->
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-core</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            
+            <!-- Fastjson2 JSON序列化 -->
+            <dependency>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>${fastjson2.version}</version>
             </dependency>
             
             <!-- 子模块间的依赖管理 -->

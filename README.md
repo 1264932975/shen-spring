@@ -19,8 +19,8 @@ shen-root (pom)                        聚合父工程
 
 | 模块 | 职责 | 核心内容 |
 |---|---|---|
-| common | 通用基础，不依赖任何框架 | ResultCode、BusinessException、hutool |
-| framework | 框架配置，通用基础设施 | RestTemplate、MyBatisPlusConfig、ShedLockConfig、GlobalExceptionHandler、BaseEntity、ApiLogAspect、ApiLog |
+| common | 通用基础，不依赖任何框架 | ResultCode、BusinessException、hutool、fastjson2 |
+| framework | 框架配置，通用基础设施 | RestTemplate、MyBatisPlusConfig、ShedLockConfig、GlobalExceptionHandler、BaseEntity、ApiLogAspect、ApiLogService、Actuator |
 | security | 安全工具，纯工具不查表 | JWT过滤器、SecurityConfig、UserContext、RequirePermission注解、切面 |
 | module-auth | 认证模块，只写一次 | AuthController、UserDetailsServiceImpl、SysUser、LoginUser |
 | module-system1 | 业务模块（共享认证） | 依赖 module-auth，零认证代码 |
@@ -34,17 +34,18 @@ shen-root
 web + lombok（全局继承）
      │
      ├── common
-     │   └── hutool
+     │   └── hutool + fastjson2
      │
      ├── security
      │   └── common + spring-security + jjwt
      │
      ├── framework
-     │   └── common + mybatis-plus + RestTemplate
-     │       ├── 配置：RestTemplateConfig、MybatisPlusConfig
+     │   └── common + mybatis-plus + RestTemplate + actuator
+     │       ├── 配置：RestTemplateConfig、MybatisPlusConfig、ShedLockConfig
      │       ├── 异常：GlobalExceptionHandler
      │       ├── 基类：BaseEntity
-     │       └── 接口日志：ApiLogAspect + ApiLog实体 + ApiLogMapper（AOP切入，自动落库）
+     │       ├── 接口日志：ApiLogAspect + ApiLog实体 + ApiLogService（AOP切入，自动落库）
+     │       └── 监控：Actuator 健康检查
      │
      ├── module-auth
      │   └── framework + security
@@ -64,16 +65,23 @@ web + lombok（全局继承）
 ```
 framework 模块内：
 ├── entity/
-│   └── ApiLog.java              # 日志实体：请求路径、入参、出参、耗时、请求时间
+│   └── ApiLog.java              # 日志实体：请求路径、入参、出参、耗时、操作人、客户端信息
 ├── mapper/
-│   └── ApiLogMapper.java        # MyBatis-Plus Mapper，直接落库
+│   └── ApiLogMapper.java        # MyBatis-Plus Mapper
+├── service/
+│   ├── ApiLogService.java       # Service 接口
+│   └── impl/
+│       └── ApiLogServiceImpl.java  # Service 实现
 └── aspect/
-    └── ApiLogAspect.java        # @Around 切 Controller 层，采集数据后调用 ApiLogMapper 入库
+    └── ApiLogAspect.java        # @Around 切 Controller 层，采集数据后调用 ApiLogService.save 入库
 ```
 
-- 切点：`@Around("execution(* com.shen..controller..*(..))")`
+- 切点：`execution(public * com.shen..controller..*.*(..))`
 - 抓取：`joinPoint.getArgs()` 入参、`joinPoint.proceed()` 出参、`System.currentTimeMillis()` 耗时
-- 落库：直接调用 `ApiLogMapper.insert()`
+- 落库：通过 `ApiLogService.save()` 落库
+- 操作人信息：从 `JwtAuthenticationTokenFilter` 的 `request.setAttribute("userId")` 复用，避免重复解析 JWT
+- 客户端信息：从 `request.getAttribute("clientVersion")` / `"clientPlatform"` 获取
+- 字段截断：body/result 超长时截断为 3000 字符 + `...[TRUNCATED]`
 - 当前方案：小项目直接落库，足够简单
 - 可扩展：大项目可改为异步写入消息队列（Kafka/RocketMQ），或输出到 ELK 日志平台
 

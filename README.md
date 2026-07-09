@@ -313,6 +313,8 @@ public class MinioFileStorageService implements FileStorageService {
 | `files.upload.path` | 本地存储路径 | `/data/uploads` |
 | `files.upload.url` | 文件访问前缀 | `https://cdn.example.com` |
 | `files.upload.max-image-dimension` | 图片最大边长 | `2000` |
+| `files.upload.thumb-size` | 缩略图尺寸 | `200` |
+| `files.upload.cleanup-buffer-days` | 未引用文件清理缓冲天数 | `3` |
 | `files.storage.type` | 存储类型 | `local` / `aliyun-oss` |
 
 ### 安全考虑

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -17,9 +18,10 @@ import java.util.Date;
 
 /**
  * 文件清理定时任务
- * 每天凌晨1点执行，清理未被引用且超过3天的文件
+ * 每天凌晨1点执行，清理未被引用且超过配置天数的文件
  */
 @Component
+@EnableScheduling
 @RequiredArgsConstructor
 @Slf4j
 public class FileCleanupScheduledTask {
@@ -35,7 +37,7 @@ public class FileCleanupScheduledTask {
      * 每天凌晨1点执行
      */
     @Scheduled(cron = "0 0 1 * * ?")
-    @SchedulerLock(name = "fileCleanupTask", lockAtMostFor = "30m")
+    @SchedulerLock(name = "fileCleanupTask", lockAtMostFor = "1h")
     public void cleanupUnreferencedFiles() {
         log.info("开始清理未被引用的文件...");
 

@@ -79,18 +79,20 @@ framework 模块内：
 │   ├── ApiLogService.java       # Service 接口
 │   └── impl/
 │       └── ApiLogServiceImpl.java  # Service 实现
-└── aspect/
-    └── ApiLogAspect.java        # @Around 切 Controller 层，采集数据后调用 ApiLogService.save 入库
+├── aspect/
+│   └── ApiLogAspect.java        # @Around 切 Controller 层，同步采集数据，异步落库
+└── config/
+    └── AsyncConfig.java         # @EnableAsync 异步配置
 ```
 
 - 切点：`execution(public * com.shen..controller..*.*(..))`
 - 抓取：`joinPoint.getArgs()` 入参、`joinPoint.proceed()` 出参、`System.currentTimeMillis()` 耗时
-- 落库：通过 `ApiLogService.save()` 落库
+- 采集：同步提取日志数据（避免异步线程丢失 RequestContextHolder）
+- 落库：异步执行 `@Async`，不阻塞接口响应
 - 操作人信息：从 `JwtAuthenticationTokenFilter` 的 `request.setAttribute("userId")` 复用，避免重复解析 JWT
 - 客户端信息：从 `request.getAttribute("clientVersion")` / `"clientPlatform"` 获取
 - 字段截断：body/result 超长时截断为 3000 字符 + `...[TRUNCATED]`
-- 当前方案：小项目直接落库，足够简单
-- 可扩展：大项目可改为异步写入消息队列（Kafka/RocketMQ），或输出到 ELK 日志平台
+- 异常安全：日志采集/落库失败不影响业务接口正常运行
 
 ## SQL 初始化方案
 

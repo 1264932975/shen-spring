@@ -20,6 +20,7 @@
         <module>framework</module>
         <module>module-file</module>
         <module>security</module>
+        <module>module-auth</module>
     </modules>
 
     <properties>

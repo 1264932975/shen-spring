@@ -10,6 +10,7 @@ shen-root (pom)                        聚合父工程
 ├── framework                          框架配置
 ├── security                           安全工具
 ├── module-auth                        认证模块
+├── module-file                        文件管理模块
 ├── module-system1                     业务模块（共享认证）
 ├── module-system2                     业务模块（独立认证）
 └── server                             单体启动器
@@ -205,6 +206,127 @@ public class OrderTimeoutJob {
 
 - 单体多节点、微服务多节点都适用
 - 锁基于数据库，天然可靠
+
+## 文件管理
+
+### 设计思路
+
+**核心问题**：文件上传后可能被多个业务引用（用户头像、订单附件、商品图片等），直接删除会导致其他业务失效。
+
+**方案：引用计数 + 索引表**
+
+```
+file_resource 表（索引）
+├── id: 雪花ID
+├── path: 文件相对路径（如 /2026/07/09/123456.jpg）
+├── ref_count: 引用计数
+└── create_time: 上传时间
+```
+
+- **上传**：写入 `file_resource`，`ref_count = 1`
+- **引用**：业务表存 `file_id`，调用 `FileService.add(fileId)` → `ref_count + 1`
+- **取消引用**：业务删除记录时调用 `FileService.delete(fileId)` → `ref_count - 1`
+- **物理清理**：定时任务扫描 `ref_count <= 0` 的记录，删除磁盘文件 + 数据库记录
+
+### 图片压缩策略
+
+按格式差异化处理，只压缩尺寸超限的图片（默认最大边长 2000px）：
+
+| 格式 | 处理方式 | 说明 |
+|---|---|---|
+| PNG | pngquant 压缩 | 无损/有损压缩，保留透明度 |
+| JPEG | Thumbnailator 动态质量 | 大文件 0.75，中文件 0.85，小文件 0.92 |
+| WebP | Thumbnailator 缩放 | 质量 0.85 |
+| BMP/GIF | 仅缩放 | 不压缩质量，避免 GIF 动图损坏 |
+
+- 压缩后体积未减小则保留原文件
+- 压缩失败自动降级到原文件
+- 临时文件 finally 块清理
+
+### 存储方案
+
+**当前：本地文件系统**
+
+```yaml
+files:
+  upload:
+    path: /data/uploads          # 本地存储路径
+    url: https://cdn.example.com # CDN/访问前缀
+    max-image-dimension: 2000    # 图片最大边长（px）
+```
+
+**配置说明**：
+
+| 配置项 | 说明 | 示例 |
+|---|---|---|
+| `path` | 服务器本地存储路径 | `/data/uploads` 或 `C:\uploads` |
+| `url` | 文件访问前缀（CDN/Nginx 代理） | `https://cdn.example.com` |
+| `max-image-dimension` | 图片最大边长，超限则压缩 | `2000` |
+| `cleanup-buffer-days` | 孤儿文件清理缓冲天数，默认 3 | `3` |
+
+**扩展：OSS/MinIO**
+
+预留 `FileStorage` 接口，本地存储作为默认实现，后续可切换：
+
+```
+FileStorage (接口)
+├── LocalFileStorage      # 本地磁盘（当前实现）
+├── MinioFileStorage     # MinIO 对象存储
+└── OssFileStorage       # 阿里云 OSS
+```
+
+### 安全考虑
+
+| 风险 | 防护 |
+|---|---|
+| 恶意文件伪装 | 扩展名 + `Content-Type` 双重校验，后续可加 Magic Number 校验 |
+| 超大文件 | 配置 `max-file-size` 限制 |
+| 敏感文件泄露 | 私有文件走网关鉴权，生成签名 URL |
+| 文件名冲突 | 雪花ID 命名，不含原始文件名 |
+
+### 缩略图
+
+业务上经常需要列表页小图，上传时可同时生成缩略图：
+
+```
+原图：/2026/07/09/123456.jpg
+缩略图：/2026/07/09/123456_thumb.jpg
+```
+
+缩略图尺寸可配置（如 200x200），与原图同目录存放。
+
+### 定时清理
+
+上传 3 天后仍未被引用（`ref_count <= 0`）的文件视为孤儿文件，定时清理：
+
+```java
+@Component
+@EnableScheduling
+@RequiredArgsConstructor
+public class FileCleanupScheduledTask {
+
+    private final FileResourceService fileResourceService;
+
+    @Value("${files.upload.path}")
+    private String uploadPath;
+
+    @Value("${files.upload.cleanup-buffer-days:3}")
+    private int cleanupBufferDays;
+
+    @Scheduled(cron = "0 0 1 * * ?")
+    @SchedulerLock(name = "fileCleanupTask", lockAtMostFor = "1h")
+    public void cleanupUnreferencedFiles() {
+        Date bufferDate = DateUtil.offsetDay(new Date(), -cleanupBufferDays);
+        // 分页查询 ref_count <= 0 且 create_time < bufferDate 的记录
+        // 删除磁盘文件 + 删除数据库记录
+    }
+}
+```
+
+- 每天凌晨 1 点执行
+- 3 天缓冲期：刚上传但还没关联业务的文件不会被误删
+- 分页处理：每次 1000 条，避免一次性加载过多数据
+- 文件不存在时只删数据库记录，不报错
 
 ## 两种认证方式
 

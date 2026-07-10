@@ -12,7 +12,7 @@ import lombok.Data;
 @Data
 public class SysAccount extends BaseEntity {
 
-    /** 账号类型：1-用户名（2-手机号 3-邮箱 4-微信 5-APP 为示例） */
+    /** 账号类型：1-用户名（2-手机号 3-邮箱 4-微信 5-APP 为示例，可按需扩展） */
     public static final int ACCOUNT_TYPE_USERNAME = 1;
 
     /**

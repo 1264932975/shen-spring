@@ -10,4 +10,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface SysUserProfileService extends IService<SysUserProfile> {
 
+    /**
+     * 根据用户ID获取资料
+     */
+    SysUserProfile getByUserId(Long userId);
+
+    /**
+     * 修改用户资料
+     */
+    void updateInfo(SysUserProfile profile);
 }

@@ -1,7 +1,7 @@
 package com.shen.auth.mapper;
 
+import com.github.yulichang.base.MPJBaseMapper;
 import com.shen.auth.entity.SysUserProfile;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
 * @author shield
@@ -9,10 +9,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2026-07-10 10:30:01
 * @Entity com.shen.auth.entity.SysUserProfile
 */
-public interface SysUserProfileMapper extends BaseMapper<SysUserProfile> {
+public interface SysUserProfileMapper extends MPJBaseMapper<SysUserProfile> {
 
 }
-
-
-
-

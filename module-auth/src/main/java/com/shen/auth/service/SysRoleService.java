@@ -1,5 +1,6 @@
 package com.shen.auth.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shen.auth.entity.SysRole;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -10,4 +11,23 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface SysRoleService extends IService<SysRole> {
 
+    /**
+     * 分页查询角色列表
+     */
+    Page<SysRole> getPage(Integer currentPage, Integer pageSize, String roleName, Integer roleType);
+
+    /**
+     * 添加角色
+     */
+    SysRole add(SysRole role);
+
+    /**
+     * 修改角色
+     */
+    SysRole update(SysRole role);
+
+    /**
+     * 删除角色
+     */
+    void delete(Long id);
 }

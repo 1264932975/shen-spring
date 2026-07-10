@@ -5,6 +5,10 @@ import com.shen.auth.entity.SysRoleMenu;
 import com.shen.auth.service.SysRoleMenuService;
 import com.shen.auth.mapper.SysRoleMenuMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
 * @author shield
@@ -15,8 +19,42 @@ import org.springframework.stereotype.Service;
 public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRoleMenu>
     implements SysRoleMenuService{
 
+    @Override
+    @Transactional
+    public void assignMenus(Long roleId, List<Long> menuIds) {
+        // 先删除旧的
+        lambdaUpdate()
+                .eq(SysRoleMenu::getRoleId, roleId)
+                .remove();
+        
+        // 再添加新的
+        if (menuIds != null && !menuIds.isEmpty()) {
+            List<SysRoleMenu> roleMenus = menuIds.stream()
+                    .map(menuId -> {
+                        SysRoleMenu rm = new SysRoleMenu();
+                        rm.setRoleId(roleId);
+                        rm.setMenuId(menuId);
+                        return rm;
+                    })
+                    .collect(Collectors.toList());
+            saveBatch(roleMenus);
+        }
+    }
+
+    @Override
+    public List<Long> getMenuIdsByRoleId(Long roleId) {
+        return lambdaQuery()
+                .eq(SysRoleMenu::getRoleId, roleId)
+                .list()
+                .stream()
+                .map(SysRoleMenu::getMenuId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteByRoleId(Long roleId) {
+        lambdaUpdate()
+                .eq(SysRoleMenu::getRoleId, roleId)
+                .remove();
+    }
 }
-
-
-
-

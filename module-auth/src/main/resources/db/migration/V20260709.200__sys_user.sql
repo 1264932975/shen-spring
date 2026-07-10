@@ -86,22 +86,9 @@ CREATE TABLE sys_role_menu (
 
 -- 默认角色
 INSERT INTO sys_role (id, role_code, role_name, role_type, description) VALUES
-(1, 'ADMIN', '超级管理员', 'admin', '管理后台超级管理员，拥有所有权限'),
-(2, 'APP_USER', '小程序用户', 'client', '小程序/APP端普通用户'),
-(3, 'MOBILE_USER', 'APP用户', 'mobile', 'APP端普通用户');
-
--- 默认管理员用户
-INSERT INTO sys_user (id, status) VALUES (1, 1);
-
--- 管理员基础信息
-INSERT INTO sys_user_profile (id, nickname) VALUES (1, '超级管理员');
-
--- 管理员账号（用户名+密码，密码：admin123，BCrypt加密）
-INSERT INTO sys_account (id, user_id, account_type, account_value, password, status) VALUES
-(1, 1, 'username', 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 1);
-
--- 管理员关联角色
-INSERT INTO sys_user_role (user_id, role_id) VALUES (1, 1);
+(1, 'ADMIN', '超级管理员', 1, '管理后台超级管理员，拥有所有权限'),
+(2, 'APP_USER', '小程序用户', 2, '小程序/APP端普通用户'),
+(3, 'MOBILE_USER', 'APP用户', 3, 'APP端普通用户');
 
 -- 默认菜单（管理后台基础菜单）
 INSERT INTO sys_menu (id, parent_id, menu_name, permission_code, menu_type, path, icon, sort) VALUES

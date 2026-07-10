@@ -1,6 +1,6 @@
 package com.shen.auth.service.impl;
 
-import com.github.yulichang.base.MPJBaseServiceImpl;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shen.auth.entity.SysUserProfile;
 import com.shen.auth.service.SysUserProfileService;
 import com.shen.auth.mapper.SysUserProfileMapper;
@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils;
  */
 @Service
 @RequiredArgsConstructor
-public class SysUserProfileServiceImpl extends MPJBaseServiceImpl<SysUserProfileMapper, SysUserProfile>
+public class SysUserProfileServiceImpl extends ServiceImpl<SysUserProfileMapper, SysUserProfile>
         implements SysUserProfileService{
 
     private final FileService fileService;

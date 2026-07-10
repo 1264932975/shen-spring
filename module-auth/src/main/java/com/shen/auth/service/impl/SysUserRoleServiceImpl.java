@@ -57,4 +57,11 @@ public class SysUserRoleServiceImpl extends ServiceImpl<SysUserRoleMapper, SysUs
                 .eq(SysUserRole::getUserId, userId)
                 .remove();
     }
+
+    @Override
+    public void deleteByRoleId(Long roleId) {
+        super.lambdaUpdate()
+                .eq(SysUserRole::getRoleId, roleId)
+                .remove();
+    }
 }

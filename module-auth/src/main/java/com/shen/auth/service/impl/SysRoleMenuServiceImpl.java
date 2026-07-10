@@ -44,6 +44,7 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
     @Override
     public List<Long> getMenuIdsByRoleId(Long roleId) {
         return super.lambdaQuery()
+                .select(SysRoleMenu::getMenuId)
                 .eq(SysRoleMenu::getRoleId, roleId)
                 .list()
                 .stream()
@@ -63,5 +64,17 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
         super.lambdaUpdate()
                 .eq(SysRoleMenu::getMenuId, menuId)
                 .remove();
+    }
+
+    @Override
+    public List<Long> getMenuIdsByRoleIds(List<Long> roleIds) {
+        return super.lambdaQuery()
+                .select(SysRoleMenu::getMenuId)
+                .in(SysRoleMenu::getRoleId, roleIds)
+                .list()
+                .stream()
+                .map(SysRoleMenu::getMenuId)
+                .distinct()
+                .collect(Collectors.toList());
     }
 }

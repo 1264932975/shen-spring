@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shen.auth.entity.SysRole;
 import com.shen.auth.service.SysRoleMenuService;
 import com.shen.auth.service.SysRoleService;
+import com.shen.auth.service.SysUserRoleService;
 import com.shen.auth.mapper.SysRoleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole>
     implements SysRoleService{
 
     private final SysRoleMenuService sysRoleMenuService;
+    private final SysUserRoleService sysUserRoleService;
 
     @Override
     public Page<SysRole> getPage(Integer currentPage, Integer pageSize, String roleName, Integer roleType) {
@@ -51,5 +53,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole>
         super.removeById(id);
         // 删除角色菜单关联
         sysRoleMenuService.deleteByRoleId(id);
+        // 删除用户角色关联
+        sysUserRoleService.deleteByRoleId(id);
     }
 }

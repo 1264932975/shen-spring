@@ -77,13 +77,8 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
             return new ArrayList<>();
         }
         
-        // 获取角色的所有菜单ID
-        List<Long> menuIds = new ArrayList<>();
-        for (Long roleId : roleIds) {
-            menuIds.addAll(sysRoleMenuService.getMenuIdsByRoleId(roleId));
-        }
-        
-        return menuIds;
+        // 批量获取角色的所有菜单ID（去重）
+        return sysRoleMenuService.getMenuIdsByRoleIds(roleIds);
     }
 
     @Override

@@ -31,4 +31,9 @@ public interface SysRoleMenuService extends IService<SysRoleMenu> {
      * 根据菜单ID删除关联
      */
     void deleteByMenuId(Long menuId);
+
+    /**
+     * 根据角色ID列表批量获取菜单ID
+     */
+    List<Long> getMenuIdsByRoleIds(List<Long> roleIds);
 }

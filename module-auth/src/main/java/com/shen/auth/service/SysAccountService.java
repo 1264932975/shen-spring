@@ -29,4 +29,14 @@ public interface SysAccountService extends IService<SysAccount> {
      * 根据用户ID删除账号（物理删除）
      */
     void deleteByUserId(Long userId);
+
+    /**
+     * 绑定账号
+     */
+    SysAccount bind(Long userId, Integer accountType, String accountValue, String password);
+
+    /**
+     * 解绑账号
+     */
+    void unbind(Long userId, Integer accountType);
 }

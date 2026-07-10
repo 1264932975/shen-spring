@@ -3,6 +3,7 @@ package com.shen.auth.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shen.auth.dto.SysMenuTreeDTO;
 import com.shen.auth.entity.SysMenu;
+import com.shen.auth.entity.SysRoleMenu;
 import com.shen.auth.service.SysMenuService;
 import com.shen.auth.service.SysRoleMenuService;
 import com.shen.auth.service.SysUserRoleService;
@@ -104,8 +105,10 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
     @Override
     @Transactional
     public void delete(Long id) {
-        // 删除所有子菜单
+        // 删除所有子菜单的关联和子菜单
         deleteChildren(id);
+        // 删除自己的角色菜单关联
+        sysRoleMenuService.deleteByMenuId(id);
         // 删除自己
         super.removeById(id);
     }
@@ -120,6 +123,9 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
         
         for (SysMenu child : children) {
             deleteChildren(child.getId());
+            // 删除子菜单的角色菜单关联
+            sysRoleMenuService.deleteByMenuId(child.getId());
+            // 删除子菜单
             super.removeById(child.getId());
         }
     }

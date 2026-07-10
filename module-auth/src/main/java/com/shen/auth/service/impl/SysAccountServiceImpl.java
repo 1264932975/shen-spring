@@ -11,6 +11,7 @@ import com.shen.auth.service.SysAccountService;
 import com.shen.auth.service.SysUserProfileService;
 import com.shen.auth.service.SysUserRoleService;
 import com.shen.auth.service.SysUserService;
+import com.shen.common.constant.CommonConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
             if (exists) {
                 return null;
             } else {
-                return  register(accountType, accountValue, password, SysRole.ROLE_ID_ADMIN);
+                return register(accountType, accountValue, password, SysRole.ROLE_ID_ADMIN);
             }
         }
 
@@ -64,12 +65,24 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
         return account;
     }
 
+
+    /***
+     * @description: 这地方用起来重点要记得。
+     * 如何要做登录即注册，依旧使用本套框架，需要严格注意管理账号和客户端账号登录逻辑。避免管理账号也进行了登录即注册。
+     * @param: accountType
+    accountValue
+    password
+    roleId
+     * @return: com.shen.auth.entity.SysAccount
+     * @author shield
+     * @date: 2026/7/10 16:40
+     */
     @Override
     @Transactional
     public SysAccount register(Integer accountType, String accountValue, String password, Long roleId) {
         // 1. 创建用户
         SysUser user = new SysUser();
-        user.setStatus(1);
+        user.setStatus(CommonConstant.STATUS_NORMAL);
         sysUserService.save(user);
 
         // 2. 创建用户基础信息
@@ -85,7 +98,7 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
         if (StringUtils.hasLength(password)) {
             account.setPassword(passwordEncoder.encode(password));
         }
-        account.setStatus(1);
+        account.setStatus(CommonConstant.STATUS_NORMAL);
         super.save(account);
 
         // 4. 关联角色
@@ -101,6 +114,47 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
     public void deleteByUserId(Long userId) {
         lambdaUpdate()
                 .eq(SysAccount::getUserId, userId)
+                .remove();
+    }
+
+    @Override
+    @Transactional
+    public SysAccount bind(Long userId, Integer accountType, String accountValue, String password) {
+        // 检查是否已绑定
+        SysAccount exist = lambdaQuery()
+                .eq(SysAccount::getUserId, userId)
+                .eq(SysAccount::getAccountType, accountType)
+                .one();
+        if (exist != null) {
+            throw new RuntimeException("已绑定该类型账号");
+        }
+
+        SysAccount account = new SysAccount();
+        account.setUserId(userId);
+        account.setAccountType(accountType);
+        account.setAccountValue(accountValue);
+        if (StringUtils.hasLength(password)) {
+            account.setPassword(passwordEncoder.encode(password));
+        }
+        account.setStatus(CommonConstant.STATUS_NORMAL);
+        super.save(account);
+        return account;
+    }
+
+    @Override
+    @Transactional
+    public void unbind(Long userId, Integer accountType) {
+        // 检查是否是最后一个账号
+        long count = lambdaQuery()
+                .eq(SysAccount::getUserId, userId)
+                .count();
+        if (count <= 1) {
+            throw new RuntimeException("至少保留一个账号");
+        }
+
+        lambdaUpdate()
+                .eq(SysAccount::getUserId, userId)
+                .eq(SysAccount::getAccountType, accountType)
                 .remove();
     }
 }

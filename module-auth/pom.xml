@@ -24,6 +24,10 @@
             <groupId>com.shen</groupId>
             <artifactId>security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.shen</groupId>
+            <artifactId>module-file</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

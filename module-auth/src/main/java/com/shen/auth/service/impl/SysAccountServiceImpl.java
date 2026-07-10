@@ -119,7 +119,7 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
 
     @Override
     public void deleteByUserId(Long userId) {
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysAccount::getUserId, userId)
                 .remove();
     }
@@ -127,13 +127,13 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
     @Override
     @Transactional
     public SysAccount bind(Long userId, Integer accountType, String accountValue, String password) {
-        // 检查是否已绑定
-        SysAccount exist = lambdaQuery()
-                .eq(SysAccount::getUserId, userId)
-                .eq(SysAccount::getAccountType, accountType)
-                .one();
+        // 检查该账号值是否已被绑定（复用 findByAccount）
+        SysAccount exist = findByAccount(accountType, accountValue);
         if (exist != null) {
-            throw new RuntimeException("已绑定该类型账号");
+            if (exist.getUserId().equals(userId)) {
+                throw new BusinessException("已绑定该类型账号");
+            }
+            throw new BusinessException("该账号已被其他用户绑定");
         }
 
         SysAccount account = new SysAccount();
@@ -152,14 +152,14 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
     @Transactional
     public void unbind(Long userId, Integer accountType) {
         // 检查是否是最后一个账号
-        long count = lambdaQuery()
+        long count = super.lambdaQuery()
                 .eq(SysAccount::getUserId, userId)
                 .count();
         if (count <= 1) {
-            throw new RuntimeException("至少保留一个账号");
+            throw new BusinessException("至少保留一个账号");
         }
 
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysAccount::getUserId, userId)
                 .eq(SysAccount::getAccountType, accountType)
                 .remove();

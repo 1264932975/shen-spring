@@ -18,6 +18,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
 * @author shield
@@ -95,7 +96,7 @@ public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUse
 
     @Override
     public void changeStatus(Long id, Integer status) {
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysUser::getId, id)
                 .set(SysUser::getStatus, status)
                 .update();
@@ -105,7 +106,7 @@ public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUse
     @Transactional
     public void cancel(Long id) {
         // 用户标记为删除状态
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysUser::getId, id)
                 .set(SysUser::getStatus, CommonConstant.STATUS_DELETED)
                 .update();

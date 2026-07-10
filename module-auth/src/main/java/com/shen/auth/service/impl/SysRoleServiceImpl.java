@@ -26,7 +26,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole>
     @Override
     public Page<SysRole> getPage(Integer currentPage, Integer pageSize, String roleName, Integer roleType) {
         Page<SysRole> page = new Page<>(currentPage, pageSize);
-        return lambdaQuery()
+        return super.lambdaQuery()
                 .like(StringUtils.hasLength(roleName), SysRole::getRoleName, roleName)
                 .eq(roleType != null, SysRole::getRoleType, roleType)
                 .orderByAsc(SysRole::getCreateTime)

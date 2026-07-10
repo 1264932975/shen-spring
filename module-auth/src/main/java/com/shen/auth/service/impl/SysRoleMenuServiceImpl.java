@@ -23,7 +23,7 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
     @Transactional
     public void assignMenus(Long roleId, List<Long> menuIds) {
         // 先删除旧的
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysRoleMenu::getRoleId, roleId)
                 .remove();
         
@@ -37,13 +37,13 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
                         return rm;
                     })
                     .collect(Collectors.toList());
-            saveBatch(roleMenus);
+            super.saveBatch(roleMenus);
         }
     }
 
     @Override
     public List<Long> getMenuIdsByRoleId(Long roleId) {
-        return lambdaQuery()
+        return super.lambdaQuery()
                 .eq(SysRoleMenu::getRoleId, roleId)
                 .list()
                 .stream()
@@ -53,14 +53,14 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
 
     @Override
     public void deleteByRoleId(Long roleId) {
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysRoleMenu::getRoleId, roleId)
                 .remove();
     }
 
     @Override
     public void deleteByMenuId(Long menuId) {
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysRoleMenu::getMenuId, menuId)
                 .remove();
     }

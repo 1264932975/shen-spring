@@ -40,7 +40,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
         }
         
         // 获取用户有权限的菜单，按sort排序
-        List<SysMenu> userMenus = lambdaQuery()
+        List<SysMenu> userMenus = super.lambdaQuery()
                 .in(SysMenu::getId, menuIds)
                 .eq(SysMenu::getStatus, CommonConstant.STATUS_NORMAL)
                 .orderByAsc(SysMenu::getSort)
@@ -57,7 +57,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
             return new ArrayList<>();
         }
         
-        return lambdaQuery()
+        return super.lambdaQuery()
                 .select(SysMenu::getPermissionCode)
                 .in(SysMenu::getId, menuIds)
                 .isNotNull(SysMenu::getPermissionCode)
@@ -113,7 +113,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
      * 递归删除子菜单
      */
     private void deleteChildren(Long parentId) {
-        List<SysMenu> children = lambdaQuery()
+        List<SysMenu> children = super.lambdaQuery()
                 .eq(SysMenu::getParentId, parentId)
                 .list();
         

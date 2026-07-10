@@ -23,7 +23,7 @@ public class SysUserProfileServiceImpl extends ServiceImpl<SysUserProfileMapper,
 
     @Override
     public SysUserProfile getByUserId(Long userId) {
-        return lambdaQuery()
+        return super.lambdaQuery()
                 .eq(SysUserProfile::getId, userId)
                 .one();
     }
@@ -42,7 +42,7 @@ public class SysUserProfileServiceImpl extends ServiceImpl<SysUserProfileMapper,
             }
         }
 
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysUserProfile::getId, profile.getId())
                 .set(StringUtils.hasLength(profile.getNickname()), SysUserProfile::getNickname, profile.getNickname())
                 .set(profile.getAvatar() != null, SysUserProfile::getAvatar, profile.getAvatar())

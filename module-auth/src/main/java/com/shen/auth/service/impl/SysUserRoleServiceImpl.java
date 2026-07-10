@@ -21,7 +21,7 @@ public class SysUserRoleServiceImpl extends ServiceImpl<SysUserRoleMapper, SysUs
 
     @Override
     public List<Long> getRoleIdsByUserId(Long userId) {
-        return lambdaQuery()
+        return super.lambdaQuery()
                 .eq(SysUserRole::getUserId, userId)
                 .list()
                 .stream()
@@ -33,7 +33,7 @@ public class SysUserRoleServiceImpl extends ServiceImpl<SysUserRoleMapper, SysUs
     @Transactional
     public void assignRoles(Long userId, List<Long> roleIds) {
         // 先删除旧的
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysUserRole::getUserId, userId)
                 .remove();
         
@@ -53,7 +53,7 @@ public class SysUserRoleServiceImpl extends ServiceImpl<SysUserRoleMapper, SysUs
 
     @Override
     public void deleteByUserId(Long userId) {
-        lambdaUpdate()
+        super.lambdaUpdate()
                 .eq(SysUserRole::getUserId, userId)
                 .remove();
     }

@@ -28,11 +28,6 @@ public interface SysUserService extends IService<SysUser> {
     SysUser update(SysUser user);
 
     /**
-     * 删除用户
-     */
-    void delete(Long id);
-
-    /**
      * 修改状态
      */
     void changeStatus(Long id, Integer status);

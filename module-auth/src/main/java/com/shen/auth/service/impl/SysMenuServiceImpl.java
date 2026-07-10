@@ -34,18 +34,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
 
     @Override
     public List<SysMenuTreeDTO> getMenuTree(Long userId) {
-        // 获取用户的所有角色ID
-        List<Long> roleIds = sysUserRoleService.getRoleIdsByUserId(userId);
-        if (CollectionUtils.isEmpty(roleIds)) {
-            return new ArrayList<>();
-        }
-        
-        // 获取角色的所有菜单ID
-        List<Long> menuIds = new ArrayList<>();
-        for (Long roleId : roleIds) {
-            menuIds.addAll(sysRoleMenuService.getMenuIdsByRoleId(roleId));
-        }
-        
+        List<Long> menuIds = getMenuIdsByUserId(userId);
         if (CollectionUtils.isEmpty(menuIds)) {
             return new ArrayList<>();
         }
@@ -63,19 +52,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
 
     @Override
     public List<String> getPermissionsByUserId(Long userId) {
-        // 获取用户的所有角色ID
-        List<Long> roleIds = sysUserRoleService.getRoleIdsByUserId(userId);
-        if (CollectionUtils.isEmpty(roleIds)) {
-            return new ArrayList<>();
-        }
-        
-        // 获取角色的所有菜单ID
-        List<Long> menuIds = new ArrayList<>();
-        for (Long roleId : roleIds) {
-            menuIds.addAll(sysRoleMenuService.getMenuIdsByRoleId(roleId));
-        }
-        
-        // 获取菜单的权限标识
+        List<Long> menuIds = getMenuIdsByUserId(userId);
         if (CollectionUtils.isEmpty(menuIds)) {
             return new ArrayList<>();
         }
@@ -88,6 +65,25 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
                 .stream()
                 .map(SysMenu::getPermissionCode)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取用户的菜单ID列表
+     */
+    private List<Long> getMenuIdsByUserId(Long userId) {
+        // 获取用户的所有角色ID
+        List<Long> roleIds = sysUserRoleService.getRoleIdsByUserId(userId);
+        if (CollectionUtils.isEmpty(roleIds)) {
+            return new ArrayList<>();
+        }
+        
+        // 获取角色的所有菜单ID
+        List<Long> menuIds = new ArrayList<>();
+        for (Long roleId : roleIds) {
+            menuIds.addAll(sysRoleMenuService.getMenuIdsByRoleId(roleId));
+        }
+        
+        return menuIds;
     }
 
     @Override

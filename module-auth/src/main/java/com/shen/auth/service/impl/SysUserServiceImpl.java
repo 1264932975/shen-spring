@@ -94,11 +94,6 @@ public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUse
     }
 
     @Override
-    public void delete(Long id) {
-        super.removeById(id);
-    }
-
-    @Override
     public void changeStatus(Long id, Integer status) {
         lambdaUpdate()
                 .eq(SysUser::getId, id)

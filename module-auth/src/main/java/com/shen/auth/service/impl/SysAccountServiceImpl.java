@@ -12,6 +12,7 @@ import com.shen.auth.service.SysUserProfileService;
 import com.shen.auth.service.SysUserRoleService;
 import com.shen.auth.service.SysUserService;
 import com.shen.common.constant.CommonConstant;
+import com.shen.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -80,6 +81,12 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
     @Override
     @Transactional
     public SysAccount register(Integer accountType, String accountValue, String password, Long roleId) {
+        // 检查账号是否已存在
+        SysAccount exist = findByAccount(accountType, accountValue);
+        if (exist != null) {
+            throw new BusinessException("该账号已存在");
+        }
+
         // 1. 创建用户
         SysUser user = new SysUser();
         user.setStatus(CommonConstant.STATUS_NORMAL);

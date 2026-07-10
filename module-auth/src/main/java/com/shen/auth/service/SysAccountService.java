@@ -24,4 +24,9 @@ public interface SysAccountService extends IService<SysAccount> {
      * 注册（首次登录自动注册）
      */
     SysAccount register(Integer accountType, String accountValue, String password, Long roleId);
+
+    /**
+     * 根据用户ID删除账号（物理删除）
+     */
+    void deleteByUserId(Long userId);
 }

@@ -96,4 +96,11 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
 
         return account;
     }
+
+    @Override
+    public void deleteByUserId(Long userId) {
+        lambdaUpdate()
+                .eq(SysAccount::getUserId, userId)
+                .remove();
+    }
 }

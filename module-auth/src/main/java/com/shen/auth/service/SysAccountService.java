@@ -3,6 +3,9 @@ package com.shen.auth.service;
 import com.shen.auth.entity.SysAccount;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author shield
  * @description 针对表【sys_account(账号表)】的数据库操作Service
@@ -39,4 +42,9 @@ public interface SysAccountService extends IService<SysAccount> {
      * 解绑账号
      */
     void unbind(Long userId, Integer accountType);
+
+    /**
+     * 根据用户ID列表批量查询账号
+     */
+    Map<Long, List<SysAccount>> getAccountsByUserIds(List<Long> userIds);
 }

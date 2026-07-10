@@ -17,7 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author shield
@@ -163,5 +169,17 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
                 .eq(SysAccount::getUserId, userId)
                 .eq(SysAccount::getAccountType, accountType)
                 .remove();
+    }
+
+    @Override
+    public Map<Long, List<SysAccount>> getAccountsByUserIds(List<Long> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return new HashMap<>();
+        }
+        return super.lambdaQuery()
+                .in(SysAccount::getUserId, userIds)
+                .list()
+                .stream()
+                .collect(Collectors.groupingBy(SysAccount::getUserId));
     }
 }

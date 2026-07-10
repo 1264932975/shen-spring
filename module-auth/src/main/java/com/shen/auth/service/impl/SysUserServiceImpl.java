@@ -18,6 +18,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -59,23 +60,30 @@ public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUse
 
         Page<SysUserDetailDTO> result = super.selectJoinListPage(page, SysUserDetailDTO.class, wrapper);
 
-        // 填充每个用户的账号列表
-        for (SysUserDetailDTO dto : result.getRecords()) {
-            List<SysAccount> accounts = sysAccountService.lambdaQuery()
-                    .eq(SysAccount::getUserId, dto.getId())
-                    .list();
+        // 批量查询账号列表，避免 N+1 查询
+        List<Long> userIds = result.getRecords().stream()
+                .map(SysUserDetailDTO::getId)
+                .collect(Collectors.toList());
 
-            List<SysUserDetailDTO.AccountInfo> accountInfos = accounts.stream()
-                    .map(acc -> {
-                        SysUserDetailDTO.AccountInfo info = new SysUserDetailDTO.AccountInfo();
-                        info.setAccountType(acc.getAccountType());
-                        info.setAccountValue(acc.getAccountValue());
-                        info.setStatus(acc.getStatus());
-                        return info;
-                    })
-                    .collect(Collectors.toList());
+        if (!CollectionUtils.isEmpty(userIds)) {
+            Map<Long, List<SysAccount>> accountMap = sysAccountService.getAccountsByUserIds(userIds);
 
-            dto.setAccounts(accountInfos);
+            // 填充每个用户的账号列表
+            for (SysUserDetailDTO dto : result.getRecords()) {
+                List<SysAccount> userAccounts = accountMap.get(dto.getId());
+                if (userAccounts != null) {
+                    List<SysUserDetailDTO.AccountInfo> accountInfos = userAccounts.stream()
+                            .map(acc -> {
+                                SysUserDetailDTO.AccountInfo info = new SysUserDetailDTO.AccountInfo();
+                                info.setAccountType(acc.getAccountType());
+                                info.setAccountValue(acc.getAccountValue());
+                                info.setStatus(acc.getStatus());
+                                return info;
+                            })
+                            .collect(Collectors.toList());
+                    dto.setAccounts(accountInfos);
+                }
+            }
         }
 
         return result;

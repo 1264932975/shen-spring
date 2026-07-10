@@ -1,8 +1,5 @@
 package com.shen.auth.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.shen.framework.base.BaseEntity;
 import lombok.Data;
@@ -15,7 +12,7 @@ import lombok.Data;
 @Data
 public class SysMenu extends BaseEntity {
     /**
-     * 父菜单ID（0表示顶级）
+     * 父菜单ID（null表示顶级）
      */
     private Long parentId;
 

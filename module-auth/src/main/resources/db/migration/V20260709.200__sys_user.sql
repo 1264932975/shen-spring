@@ -52,7 +52,7 @@ CREATE TABLE sys_role (
 -- 菜单/权限表
 CREATE TABLE sys_menu (
     id BIGINT NOT NULL COMMENT '菜单ID（雪花ID）',
-    parent_id BIGINT DEFAULT 0 COMMENT '父菜单ID（0表示顶级）',
+    parent_id BIGINT  COMMENT '父菜单ID（null表示顶级）',
     menu_name VARCHAR(50) NOT NULL COMMENT '菜单名称',
     permission_code VARCHAR(100) COMMENT '权限标识（如 user:list、user:delete）',
     menu_type VARCHAR(20) NOT NULL COMMENT '菜单类型：menu-菜单 button-按钮',

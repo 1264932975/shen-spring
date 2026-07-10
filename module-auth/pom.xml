@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>module-auth</artifactId>
-    <description>认证模块，展示如何使用 security 实现完整认证流程</description>
+    <description>认证模块</description>
 
     <dependencies>
         <!-- 框架基础设施 -->

@@ -408,6 +408,115 @@ http
     .addFilterBefore(permissionLoadingFilter, JwtAuthenticationTokenFilter.class);
 ```
 
+### 数据库表设计
+
+| 表名 | 说明 | 关键字段 |
+|---|---|---|
+| sys_user | 用户表（核心实体） | id、status、create_time |
+| sys_user_profile | 用户基础信息表（扩展） | id(同user.id)、nickname、avatar、real_name、gender、phone、email |
+| sys_account | 账号表（登录凭证） | id、user_id、account_type、account_value、password、status |
+| sys_role | 角色表 | id、role_code、role_name、role_type、description、status |
+| sys_menu | 菜单/权限表 | id、parent_id、menu_name、permission_code、menu_type、path、icon、sort、status |
+| sys_user_role | 用户角色关联表 | user_id、role_id |
+| sys_role_menu | 角色菜单关联表 | role_id、menu_id |
+
+### 账号类型
+
+| 类型值 | 说明 |
+|---|---|
+| 1 | 用户名 |
+| 2 | 手机号 |
+| 3 | 邮箱 |
+| 4 | 微信 |
+| 5 | APP |
+
+### 角色类型
+
+| 类型值 | 说明 |
+|---|---|
+| 1 | 管理后台 |
+| 2 | 小程序/APP |
+| 3 | APP |
+
+### Service 层设计
+
+| Service | 核心方法 | 说明 |
+|---|---|---|
+| SysAccountService | findByAccount、login、register、bind、unbind、deleteByUserId、getAccountsByUserIds | 账号管理：登录、注册、绑定、解绑 |
+| SysUserService | getPage、add、update、changeStatus、cancel | 用户管理：分页查询、增改、注销（软删除） |
+| SysUserProfileService | getByUserId、updateInfo | 用户资料：查询、修改（含头像索引管理） |
+| SysRoleService | getPage、add、update、delete | 角色管理：分页查询、增删改（删除时清理关联） |
+| SysMenuService | getMenuTree、getPermissionsByUserId、add、update、delete | 菜单管理：树形结构、权限加载、递归删除 |
+| SysRoleMenuService | assignMenus、getMenuIdsByRoleId、getMenuIdsByRoleIds、deleteByRoleId、deleteByMenuId | 角色菜单关联：分配权限、批量查询 |
+| SysUserRoleService | getRoleIdsByUserId、assignRoles、deleteByUserId、deleteByRoleId | 用户角色关联：分配角色、批量删除 |
+
+### 核心业务逻辑
+
+**1. 登录即注册**
+- 首次登录（数据库为空）自动注册为管理员角色
+- 后续登录只认证，不注册
+- 第三方登录无密码校验
+
+**2. 注册流程**
+- 创建 sys_user → 创建 sys_user_profile → 创建 sys_account → 关联 sys_user_role
+- 检查账号值是否已存在，防止重复注册
+
+**3. 注销逻辑**
+- sys_user 标记为 STATUS_DELETED（软删除，保留数据）
+- sys_account 物理删除（释放手机号/邮箱，允许新注册）
+
+**4. 绑定/解绑**
+- bind：检查账号值是否已被其他用户绑定
+- unbind：至少保留一个账号，防止用户无账号
+
+**5. 菜单树构建**
+- 根据用户角色获取菜单ID（批量查询，去重）
+- 按 parentId 递归构建树形结构
+
+**6. 删除菜单**
+- 递归删除所有子菜单及其角色菜单关联
+- 事务保证原子性
+
+**7. 删除角色**
+- 删除角色记录
+- 删除 sys_role_menu 关联
+- 删除 sys_user_role 关联
+
+**8. 头像索引管理**
+- 修改头像时：旧头像减索引，新头像加索引
+- 依赖 file 模块的 FileService
+
+### 查询优化
+
+| 场景 | 优化方式 |
+|---|---|
+| 用户分页查询 | JOIN sys_user_profile，批量查询 sys_account（避免 N+1） |
+| 用户菜单查询 | 批量获取角色菜单ID（避免循环查询） |
+| 权限查询 | 只查 permission_code 字段（减少数据传输） |
+| 角色菜单查询 | select 只查 menuId 字段 |
+
+### DTO 设计
+
+| DTO | 用途 |
+|---|---|
+| SysUserDetailDTO | 用户详情聚合（User + Profile + Account 列表） |
+| SysMenuTreeDTO | 菜单树形结构（含 children 递归） |
+
+### 异常处理
+
+| 异常类 | 处理内容 |
+|---|---|
+| AuthenticationExceptionHandler | 认证失败返回 401，权限不足返回 403 |
+
+### 模块依赖
+
+```
+module-auth
+├── framework（MyBatis-Plus、Flyway、全局异常）
+├── security（JWT、PasswordEncoder、AuthenticationManager）
+└── module-file（头像索引管理）
+```
+
 ### module-system2 独立认证写法
 
 module-system2 不依赖 module-auth，参考 module-auth 的写法，自己实现：

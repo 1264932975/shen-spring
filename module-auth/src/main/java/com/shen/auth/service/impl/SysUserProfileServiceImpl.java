@@ -35,8 +35,10 @@ public class SysUserProfileServiceImpl extends ServiceImpl<SysUserProfileMapper,
         // 头像变更：旧头像减索引，新头像加索引
         if (profile.getAvatar() != null && oldProfile != null) {
             if (!profile.getAvatar().equals(oldProfile.getAvatar())) {
-                // 旧头像减索引
-                fileService.delete(oldProfile.getAvatar());
+                // 旧头像减索引（旧头像为空则跳过）
+                if (oldProfile.getAvatar() != null) {
+                    fileService.delete(oldProfile.getAvatar());
+                }
                 // 新头像加索引
                 fileService.add(profile.getAvatar());
             }

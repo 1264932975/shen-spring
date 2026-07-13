@@ -63,10 +63,13 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
             }
         }
 
-        // 第三方登录无密码
-        if (StringUtils.hasLength(account.getPassword()) && !passwordEncoder.matches(password, account.getPassword())) {
+        // 只有账号密码登录才检查密码
+        if (accountType == SysAccount.ACCOUNT_TYPE_USERNAME
+                && !passwordEncoder.matches(password, account.getPassword())) {
             return null;
         }
+
+        //TODO: 如需要邮箱，手机号验证码，微信扫码登录等。在此添加。
 
         account.setPassword(null);
         return account;

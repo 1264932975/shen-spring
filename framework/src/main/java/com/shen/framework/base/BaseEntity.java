@@ -1,4 +1,4 @@
-﻿package com.shen.framework.base;
+package com.shen.framework.base;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

@@ -483,26 +483,32 @@ public ResponseEntity<Object> delete(Long id) { ... }
 
 ### 核心业务逻辑
 
-**1. 登录即注册**
+**1. 登录（支持多种账号类型）**
+- 接收 `accountType`、`accountValue`、`password`
+- 只有 `ACCOUNT_TYPE_USERNAME`（账号密码登录）才校验密码
+- 第三方登录（微信、手机号验证码等）无需密码
 - 首次登录（数据库为空）自动注册为管理员角色
-- 后续登录只认证，不注册
-- 第三方登录无密码校验
 
-**2. 注册流程**
-- 创建 sys_user → 创建 sys_user_profile → 创建 sys_account → 关联 sys_user_role
-- 检查账号值是否已存在，防止重复注册
+**2. 注册流程（管理员添加后台人员）**
+- 只接收 `accountValue`（账号值）
+- 自动生成8位密码（大小写字母+数字+特殊符号各至少1个）
+- 创建 sys_user → 创建 sys_account（绑定账号密码）
+- 返回生成的密码给前端，由管理员分发给用户
 
 **3. 注销逻辑**
+- 用户自己操作（`PUT /open/auth/cancel`）
 - sys_user 标记为 STATUS_DELETED（软删除，保留数据）
-- sys_account 物理删除（释放手机号/邮箱，允许新注册）
+- sys_account 物理删除（释放账号，允许新注册）
+- 同一事务保证原子性
 
 **4. 绑定/解绑**
 - bind：检查账号值是否已被其他用户绑定
 - unbind：至少保留一个账号，防止用户无账号
 
 **5. 菜单树构建**
-- 根据用户角色获取菜单ID（批量查询，去重）
-- 按 parentId 递归构建树形结构
+- 超级管理员（roleId = 1）→ 返回全部菜单
+- userId 为 null → 返回全部菜单（管理用）
+- 普通用户 → 根据角色获取菜单ID，递归构建树形结构
 
 **6. 删除菜单**
 - 递归删除所有子菜单及其角色菜单关联

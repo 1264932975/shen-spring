@@ -66,7 +66,7 @@ public class SysUserController {
         // 自动生成8位密码（大小写字母+数字+特殊符号）
         String password = generatePassword();
         // 创建用户并绑定账号
-        SysAccount account = sysAccountService.register(1, accountValue, password, null);
+        SysAccount account = sysAccountService.register(SysAccount.ACCOUNT_TYPE_USERNAME, accountValue, password, null);
         return ResponseEntity.ok(password);
     }
 

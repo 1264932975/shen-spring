@@ -16,11 +16,3 @@ spring:
     multipart:
       max-file-size: 512MB
       max-request-size: 512MB
-
-
-shiro:
-  ws:
-    server:
-      enable: true
-      url: "/ws/shiro"
-    access-token: OL4VME~WhyapKfUg

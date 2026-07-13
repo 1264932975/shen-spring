@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/shen?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    username: root
+    password: 123456
+    driverClassName: com.mysql.cj.jdbc.Driver
+    max-active: 20
+    max-idle: 8
+    min-idle: 8
+    initial-size: 10
+files:
+  upload:
+    #读取需要nginx配置代理转发
+    url: http://127.0.0.1/files
+    #windows 系统文件上传路径
+    path: ./upload

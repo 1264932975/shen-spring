@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="smtpHost" source="log.mail.host"/>
+    <springProperty scope="context" name="username" source="log.mail.username"/>
+    <springProperty scope="context" name="password" source="log.mail.password"/>
+    <springProperty scope="context" name="smtpPort" source="log.mail.smtpPort"/>
+    <springProperty scope="context" name="from" source="log.mail.from"/>
+    <springProperty scope="context" name="to" source="log.mail.to"/>
+
+
+    <springProperty name="APP_NAME" source="spring.application.name"/>
+    <springProperty name="SERVER_PORT" source="server.port"/>
+    <!-- 定义日志文件路径 -->
+    <property name="LOG_FILE" value="./logs/${APP_NAME}-${SERVER_PORT}.log"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 文件输出 appender -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+    <!-- 异步输出 -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>20</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>256</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="FILE"/>
+    </appender>
+
+
+    <!--    发邮件-->
+    <appender name="EMAIL" class="ch.qos.logback.classic.net.SMTPAppender">
+        <smtpHost>${smtpHost}</smtpHost>
+        <smtpPort>${smtpPort}</smtpPort>
+        <username>${username}</username>
+        <password>${password}</password>
+        <SSL>true</SSL>
+        <asynchronousSending>true</asynchronousSending>
+        <from>${from}</from>
+        <to>${to}</to>
+        <subject>应用错误：%logger{0} - %msg</subject>
+        <charsetEncoding>UTF-8</charsetEncoding>
+        <cyclicBufferTracker class="ch.qos.logback.core.spi.CyclicBufferTracker">
+            <!-- 每个电子邮件只发送一个日志条目 -->
+            <bufferSize>1</bufferSize>
+        </cyclicBufferTracker>
+        <!--HTML展示        个人喜欢简单模式，有需要可以使用.html.htmllayout-->
+        <layout class="ch.qos.logback.classic.layout.TTLLLayout"/>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <!--错误级别(只会提示大于该级别的错误)-->
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+
+    <!-- 非开发环境：同时输出到文件和控制台 -->
+    <springProfile name="!dev">
+        <root level="info">
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="EMAIL"/>
+        </root>
+    </springProfile>
+
+
+
+
+    <!-- 开发环境：只输出到控制台 -->
+    <springProfile name="dev">
+        <root level="debug">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>

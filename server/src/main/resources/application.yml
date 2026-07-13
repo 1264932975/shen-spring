@@ -1,0 +1,26 @@
+server:
+  port: 8282
+  shutdown: graceful
+spring:
+  jackson:
+    ## 格式为yyyy-MM-dd HH:mm:ss
+    date-format: yyyy-MM-dd HH:mm:ss
+    ## 定时区，解决8小时的时间差问题
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+  application:
+    name: appService
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 512MB
+      max-request-size: 512MB
+
+
+shiro:
+  ws:
+    server:
+      enable: true
+      url: "/ws/shiro"
+    access-token: OL4VME~WhyapKfUg

@@ -6,6 +6,7 @@ import com.shen.auth.entity.SysAccount;
 import com.shen.auth.entity.SysUser;
 import com.shen.auth.service.SysAccountService;
 import com.shen.auth.service.SysUserService;
+import cn.hutool.core.util.RandomUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -102,25 +105,19 @@ public class SysUserController {
         String digits = "0123456789";
         String special = "!@#$%^&*";
         String all = upper + lower + digits + special;
-        java.util.Random random = new java.util.Random();
-        StringBuilder sb = new StringBuilder(8);
+        
+        List<Character> chars = new ArrayList<>();
         // 确保每种类型至少一个
-        sb.append(upper.charAt(random.nextInt(upper.length())));
-        sb.append(lower.charAt(random.nextInt(lower.length())));
-        sb.append(digits.charAt(random.nextInt(digits.length())));
-        sb.append(special.charAt(random.nextInt(special.length())));
+        chars.add(RandomUtil.randomChar(upper));
+        chars.add(RandomUtil.randomChar(lower));
+        chars.add(RandomUtil.randomChar(digits));
+        chars.add(RandomUtil.randomChar(special));
         // 剩余4位随机
         for (int i = 0; i < 4; i++) {
-            sb.append(all.charAt(random.nextInt(all.length())));
+            chars.add(RandomUtil.randomChar(all));
         }
         // 打乱顺序
-        char[] chars = sb.toString().toCharArray();
-        for (int i = chars.length - 1; i > 0; i--) {
-            int j = random.nextInt(i + 1);
-            char temp = chars[i];
-            chars[i] = chars[j];
-            chars[j] = temp;
-        }
-        return new String(chars);
+        Collections.shuffle(chars);
+        return chars.stream().map(String::valueOf).collect(Collectors.joining());
     }
 }

@@ -1,4 +1,4 @@
-package com.shen.server;
+package com.shen;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

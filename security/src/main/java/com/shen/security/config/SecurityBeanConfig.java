@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * 提供基础 Bean，不定义 SecurityFilterChain（由业务模块定义）
  */
 @Configuration
-public class SecurityConfig {
+public class SecurityBeanConfig {
 
     /**
      * 密码编码器（BCrypt）

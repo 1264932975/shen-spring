@@ -115,10 +115,12 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
         super.save(account);
 
         // 4. 关联角色
-        SysUserRole userRole = new SysUserRole();
-        userRole.setUserId(user.getId());
-        userRole.setRoleId(roleId);
-        sysUserRoleService.save(userRole);
+        if (roleId != null) {
+            SysUserRole userRole = new SysUserRole();
+            userRole.setUserId(user.getId());
+            userRole.setRoleId(roleId);
+            sysUserRoleService.save(userRole);
+        }
 
         return account;
     }

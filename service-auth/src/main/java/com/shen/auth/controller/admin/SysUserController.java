@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,8 +59,15 @@ public class SysUserController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Object> add(@RequestBody SysUser user) {
-        return ResponseEntity.ok(sysUserService.add(user));
+    public ResponseEntity<Object> add(String accountValue) {
+        if (!StringUtils.hasLength(accountValue)) {
+            return ResponseEntity.badRequest().body("账号不能为空");
+        }
+        // 自动生成8位密码（大小写字母+数字+特殊符号）
+        String password = generatePassword();
+        // 创建用户并绑定账号
+        SysAccount account = sysAccountService.register(1, accountValue, password, null);
+        return ResponseEntity.ok(password);
     }
 
     @PutMapping("/update")
@@ -86,5 +94,33 @@ public class SysUserController {
         private String accountValue;
         private Integer accountType;
         private Integer status;
+    }
+
+    private String generatePassword() {
+        String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lower = "abcdefghijklmnopqrstuvwxyz";
+        String digits = "0123456789";
+        String special = "!@#$%^&*";
+        String all = upper + lower + digits + special;
+        java.util.Random random = new java.util.Random();
+        StringBuilder sb = new StringBuilder(8);
+        // 确保每种类型至少一个
+        sb.append(upper.charAt(random.nextInt(upper.length())));
+        sb.append(lower.charAt(random.nextInt(lower.length())));
+        sb.append(digits.charAt(random.nextInt(digits.length())));
+        sb.append(special.charAt(random.nextInt(special.length())));
+        // 剩余4位随机
+        for (int i = 0; i < 4; i++) {
+            sb.append(all.charAt(random.nextInt(all.length())));
+        }
+        // 打乱顺序
+        char[] chars = sb.toString().toCharArray();
+        for (int i = chars.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            char temp = chars[i];
+            chars[i] = chars[j];
+            chars[j] = temp;
+        }
+        return new String(chars);
     }
 }

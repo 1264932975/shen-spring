@@ -30,7 +30,7 @@ public class PermissionLoadingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = (Long) request.getAttribute("userId");//此处的前置条件为，security提供的过滤器在此之前执行
 
         if (userId == null) {
             filterChain.doFilter(request, response);

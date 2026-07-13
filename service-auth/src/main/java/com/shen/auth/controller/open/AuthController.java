@@ -1,7 +1,6 @@
 package com.shen.auth.controller.open;
 
 import com.shen.auth.entity.SysAccount;
-import com.shen.auth.entity.SysUser;
 import com.shen.auth.service.SysAccountService;
 import com.shen.auth.service.SysUserService;
 import com.shen.security.util.JwtTokenUtil;
@@ -45,7 +44,7 @@ public class AuthController {
         String token = jwtTokenUtil.generateToken(account.getUserId(), null);
         LoginRes loginRes = new LoginRes();
         loginRes.setToken(token);
-        loginRes.setUserId(account.getUserId());
+        loginRes.setAccount(account);
         return ResponseEntity.ok(loginRes);
     }
 
@@ -71,6 +70,6 @@ public class AuthController {
     @Data
     public static class LoginRes {
         private String token;
-        private Long userId;
+        private SysAccount account;
     }
 }

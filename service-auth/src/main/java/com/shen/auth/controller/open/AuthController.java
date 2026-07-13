@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/open/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -22,7 +22,7 @@ public class AuthController {
     private final SysAccountService sysAccountService;
     private final JwtTokenUtil jwtTokenUtil;
 
-    @PostMapping("/login")
+    @PostMapping("/open/login")
     public ResponseEntity<Object> login(@RequestBody LoginReq req) {
         if (req.getAccountType() == null) {
             return ResponseEntity.badRequest().body("账号类型不能为空");

@@ -3,6 +3,7 @@ package com.shen.auth.controller.admin;
 import com.shen.auth.entity.SysRole;
 import com.shen.auth.service.SysRoleService;
 import com.shen.auth.service.SysUserRoleService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -67,7 +68,7 @@ public class SysRoleController {
         return ResponseEntity.ok("分配成功");
     }
 
-    @lombok.Data
+    @Data
     public static class PageReq {
         private Integer currentPage = 1;
         private Integer pageSize = 10;

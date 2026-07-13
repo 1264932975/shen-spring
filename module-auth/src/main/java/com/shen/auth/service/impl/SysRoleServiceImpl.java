@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
 /**
 * @author shield
 * @description 针对表【sys_role(角色表)】的数据库操作Service实现
@@ -55,5 +57,17 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole>
         sysRoleMenuService.deleteByRoleId(id);
         // 删除用户角色关联
         sysUserRoleService.deleteByRoleId(id);
+    }
+
+    @Override
+    public boolean hasRoleType(Long userId, Integer roleType) {
+        List<Long> roleIds = sysUserRoleService.getRoleIdsByUserId(userId);
+        if (roleIds.isEmpty()) {
+            return false;
+        }
+        return super.lambdaQuery()
+                .in(SysRole::getId, roleIds)
+                .eq(SysRole::getRoleType, roleType)
+                .count() > 0;
     }
 }

@@ -30,4 +30,9 @@ public interface SysRoleService extends IService<SysRole> {
      * 删除角色
      */
     void delete(Long id);
+
+    /**
+     * 判断用户是否有指定类型的角色
+     */
+    boolean hasRoleType(Long userId, Integer roleType);
 }

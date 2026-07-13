@@ -21,6 +21,7 @@
         <module>module-file</module>
         <module>security</module>
         <module>service-auth</module>
+        <module>service-file</module>
     </modules>
 
     <properties>

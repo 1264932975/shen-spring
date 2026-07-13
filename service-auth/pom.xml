@@ -9,8 +9,8 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>module-auth</artifactId>
-    <description>认证模块</description>
+    <artifactId>service-auth</artifactId>
+    <description>认证服务</description>
 
     <dependencies>
         <!-- 框架基础设施 -->

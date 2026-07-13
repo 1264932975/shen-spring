@@ -11,6 +11,7 @@ shen-root (pom)                        聚合父工程
 ├── security                           安全工具
 ├── module-file                        文件管理模块（通用工具）
 ├── service-auth                       认证服务（业务服务）
+├── service-file                       文件上传服务示例（业务服务）
 ├── service-xxx                        其他业务服务
 └── server                             单体启动器
 ```
@@ -20,7 +21,7 @@ shen-root (pom)                        聚合父工程
 | 类型 | 前缀 | 特点 | 模块 |
 |---|---|---|---|
 | **通用工具** | 无前缀 / module-* | 纯工具/配置，不含 Controller，不可独立运行 | common、framework、security、module-file |
-| **业务服务** | service-* | 完整业务（Controller + Service + Entity），可独立部署 | service-auth、service-xxx |
+| **业务服务** | service-* | 完整业务（Controller + Service + Entity），可独立部署 | service-auth、service-file、service-xxx |
 
 ## 各模块职责
 
@@ -31,6 +32,7 @@ shen-root (pom)                        聚合父工程
 | security | 安全工具 | 纯工具不查表 | JwtTokenUtil、JwtAuthenticationTokenFilter、UserContext、PasswordEncoder、AuthenticationManager |
 | module-file | 通用工具 | 文件存储管理 | FileService、FileResourceService、FileStorageService、定时清理 |
 | service-auth | 业务服务 | 认证服务（完整业务） | AuthController、用户/角色/菜单管理、PermissionLoadingFilter、SecurityConfig |
+| service-file | 业务服务 | 文件上传服务示例 | FileController（示例，具体业务自行处理） |
 | service-xxx | 业务服务 | 其他业务服务 | 依赖通用工具模块，自己写 Controller + Service |
 | server | 启动入口 | 聚合所有 service-* | 启动入口 |
 
@@ -70,11 +72,15 @@ web + lombok（全局继承）
      │       ├── SecurityConfig（注册过滤器 + 权限规则）
      │       └── 用户/角色/菜单管理（Controller + Service）
      │
+     ├── service-file
+     │   └── framework + module-file
+     │       └── FileController（文件上传服务示例，具体业务自行处理）
+     │
      ├── service-xxx
      │   └── framework + security + module-file（参考 service-auth 写法）
      │
      └── server
-         └── service-auth + service-xxx
+         └── service-auth + service-file + service-xxx
 ```
 
 ## 接口日志实现
@@ -553,6 +559,11 @@ service-auth
 ├── security（JWT、PasswordEncoder、AuthenticationManager）
 └── module-file（头像索引管理）
 ```
+
+### service-file 文件上传服务示例
+
+service-file 是一个文件上传接口服务的示例，展示如何基于 module-file 通用工具模块构建业务服务。
+具体业务逻辑（如上传权限、文件分类、业务关联等）请按照实际情况自行处理，此处不做过多赘述。
 
 ### service-xxx 业务服务写法
 

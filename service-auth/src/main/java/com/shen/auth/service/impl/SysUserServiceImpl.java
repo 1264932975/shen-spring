@@ -7,19 +7,15 @@ import com.shen.auth.dto.SysUserDetailDTO;
 import com.shen.auth.entity.SysAccount;
 import com.shen.auth.entity.SysUser;
 import com.shen.auth.entity.SysUserProfile;
-import com.shen.auth.service.SysAccountService;
 import com.shen.auth.service.SysUserService;
 import com.shen.auth.mapper.SysUserMapper;
 import com.shen.common.constant.CommonConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
 * @author shield
@@ -30,8 +26,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUser>
     implements SysUserService{
-
-    private final SysAccountService sysAccountService;
 
     @Override
     public Page<SysUserDetailDTO> getPage(Integer currentPage, Integer pageSize, String accountValue, Integer accountType, Integer status) {
@@ -58,35 +52,7 @@ public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUse
         wrapper.eq(status != null, SysUser::getStatus, status);
         wrapper.orderByDesc(SysUser::getCreateTime);
 
-        Page<SysUserDetailDTO> result = super.selectJoinListPage(page, SysUserDetailDTO.class, wrapper);
-
-        // 批量查询账号列表，避免 N+1 查询
-        List<Long> userIds = result.getRecords().stream()
-                .map(SysUserDetailDTO::getId)
-                .collect(Collectors.toList());
-
-        if (!CollectionUtils.isEmpty(userIds)) {
-            Map<Long, List<SysAccount>> accountMap = sysAccountService.getAccountsByUserIds(userIds);
-
-            // 填充每个用户的账号列表
-            for (SysUserDetailDTO dto : result.getRecords()) {
-                List<SysAccount> userAccounts = accountMap.get(dto.getId());
-                if (userAccounts != null) {
-                    List<SysUserDetailDTO.AccountInfo> accountInfos = userAccounts.stream()
-                            .map(acc -> {
-                                SysUserDetailDTO.AccountInfo info = new SysUserDetailDTO.AccountInfo();
-                                info.setAccountType(acc.getAccountType());
-                                info.setAccountValue(acc.getAccountValue());
-                                info.setStatus(acc.getStatus());
-                                return info;
-                            })
-                            .collect(Collectors.toList());
-                    dto.setAccounts(accountInfos);
-                }
-            }
-        }
-
-        return result;
+        return super.selectJoinListPage(page, SysUserDetailDTO.class, wrapper);
     }
 
     @Override
@@ -111,15 +77,19 @@ public class SysUserServiceImpl extends MPJBaseServiceImpl<SysUserMapper, SysUse
     }
 
     @Override
-    @Transactional
     public void cancel(Long id) {
         // 用户标记为删除状态
         super.lambdaUpdate()
                 .eq(SysUser::getId, id)
                 .set(SysUser::getStatus, CommonConstant.STATUS_DELETED)
                 .update();
+    }
 
-        // 删除该用户的所有账号（物理删除）
-        sysAccountService.deleteByUserId(id);
+    @Override
+    public boolean exists() {
+        return super.lambdaQuery()
+                .select(SysUser::getId)
+                .last("LIMIT 1")
+                .one() != null;
     }
 }

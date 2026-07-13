@@ -34,20 +34,25 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu>
 
     @Override
     public List<SysMenuTreeDTO> getMenuTree(Long userId) {
-        List<Long> menuIds = getMenuIdsByUserId(userId);
-        if (CollectionUtils.isEmpty(menuIds)) {
-            return new ArrayList<>();
+        List<SysMenu> menus;
+        if (userId == null) {
+            // null 返回全部菜单
+            menus = super.lambdaQuery()
+                    .eq(SysMenu::getStatus, CommonConstant.STATUS_NORMAL)
+                    .orderByAsc(SysMenu::getSort)
+                    .list();
+        } else {
+            List<Long> menuIds = getMenuIdsByUserId(userId);
+            if (CollectionUtils.isEmpty(menuIds)) {
+                return new ArrayList<>();
+            }
+            menus = super.lambdaQuery()
+                    .in(SysMenu::getId, menuIds)
+                    .eq(SysMenu::getStatus, CommonConstant.STATUS_NORMAL)
+                    .orderByAsc(SysMenu::getSort)
+                    .list();
         }
-        
-        // 获取用户有权限的菜单，按sort排序
-        List<SysMenu> userMenus = super.lambdaQuery()
-                .in(SysMenu::getId, menuIds)
-                .eq(SysMenu::getStatus, CommonConstant.STATUS_NORMAL)
-                .orderByAsc(SysMenu::getSort)
-                .list();
-        
-        // 构建树形结构
-        return buildTree(0L, userMenus);
+        return buildTree(0L, menus);
     }
 
     @Override

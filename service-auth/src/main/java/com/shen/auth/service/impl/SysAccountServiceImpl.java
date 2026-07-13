@@ -55,7 +55,7 @@ public class SysAccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAcco
 
         if (account == null) {
             // 没查到，如果数据库为空，第一个人进行注册操作
-            boolean exists = sysUserService.lambdaQuery().select(SysUser::getId).last("LIMIT 1").one() != null;
+            boolean exists = sysUserService.exists();
             if (exists) {
                 return null;
             } else {

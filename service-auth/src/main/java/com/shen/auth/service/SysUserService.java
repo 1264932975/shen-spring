@@ -36,4 +36,9 @@ public interface SysUserService extends IService<SysUser> {
      * 注销用户（软删除，标记为删除状态）
      */
     void cancel(Long id);
+
+    /**
+     * 判断用户表是否存在数据
+     */
+    boolean exists();
 }

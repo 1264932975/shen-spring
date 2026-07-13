@@ -6,9 +6,9 @@ import com.shen.auth.entity.SysAccount;
 import com.shen.auth.entity.SysUser;
 import com.shen.auth.service.SysAccountService;
 import com.shen.auth.service.SysUserService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -79,7 +79,7 @@ public class SysUserController {
         return ResponseEntity.ok("修改成功");
     }
 
-    @lombok.Data
+    @Data
     public static class PageReq {
         private Integer currentPage = 1;
         private Integer pageSize = 10;

@@ -22,7 +22,7 @@ public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
 
     @PostMapping("/open/login")
-    public ResponseEntity<Object> login(@RequestBody LoginReq req) {
+    public ResponseEntity<Object> login(LoginReq req) {
         if (req.getAccountType() == null) {
             return ResponseEntity.badRequest().body("账号类型不能为空");
         }

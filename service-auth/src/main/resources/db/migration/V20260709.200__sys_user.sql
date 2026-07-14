@@ -68,18 +68,24 @@ CREATE TABLE sys_menu (
 
 -- 用户角色关联表
 CREATE TABLE sys_user_role (
+    id BIGINT NOT NULL COMMENT '主键ID（雪花ID）',
     user_id BIGINT NOT NULL COMMENT '用户ID',
     role_id BIGINT NOT NULL COMMENT '角色ID',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    PRIMARY KEY (user_id, role_id)
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_user_role (user_id, role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户角色关联表';
 
 -- 角色菜单关联表
 CREATE TABLE sys_role_menu (
+    id BIGINT NOT NULL COMMENT '主键ID（雪花ID）',
     role_id BIGINT NOT NULL COMMENT '角色ID',
     menu_id BIGINT NOT NULL COMMENT '菜单ID',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    PRIMARY KEY (role_id, menu_id)
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_role_menu (role_id, menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色菜单关联表';
 
 -- 初始化数据
@@ -100,7 +106,3 @@ INSERT INTO sys_menu (id, parent_id, menu_name, permission_code, menu_type, path
 (6, 2, '用户删除', 'user:delete', 'button', NULL, NULL, 4),
 (7, 1, '角色管理', 'role:list', 'menu', '/system/role', 'peoples', 2),
 (8, 1, '菜单管理', 'menu:list', 'menu', '/system/menu', 'tree-table', 3);
-
--- 管理员角色关联所有菜单
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu;
